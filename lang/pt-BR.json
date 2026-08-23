@@ -1,0 +1,10 @@
+{
+  "ORDEM_BRIDGE.Settings.BridgeUrl.Name": "URL do Foundry Bridge",
+  "ORDEM_BRIDGE.Settings.BridgeUrl.Hint": "Endpoint HTTPS publicado pela Ordem da Última Luz.",
+  "ORDEM_BRIDGE.Settings.CampaignId.Name": "ID da campanha",
+  "ORDEM_BRIDGE.Settings.CampaignId.Hint": "Identificador informado pelo administrador do portal.",
+  "ORDEM_BRIDGE.Notifications.RegistrationRequired": "O Bridge da Ordem ainda não está registrado. Consulte o README do módulo para concluir a conexão.",
+  "ORDEM_BRIDGE.Notifications.Registered": "Mundo conectado com segurança ao portal da Ordem.",
+  "ORDEM_BRIDGE.Notifications.SyncComplete": "Personagens sincronizados com o portal da Ordem.",
+  "ORDEM_BRIDGE.Notifications.ConnectionFailed": "O Foundry Bridge não conseguiu alcançar o portal. Uma nova tentativa será feita automaticamente."
+}

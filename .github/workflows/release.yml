@@ -1,0 +1,50 @@
+name: Release Foundry module
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate tag and manifest
+        shell: bash
+        run: |
+          version="$(node -p "require('./module.json').version")"
+          if [ "v${version}" != "${GITHUB_REF_NAME}" ]; then
+            echo "Tag ${GITHUB_REF_NAME} does not match module version ${version}."
+            exit 1
+          fi
+          node -e "JSON.parse(require('fs').readFileSync('module.json', 'utf8'))"
+
+      - name: Package module
+        shell: bash
+        run: |
+          mkdir -p dist/package
+          cp module.json README.md CHANGELOG.md dist/package/
+          cp -R lang scripts dist/package/
+          cd dist/package
+          zip -r ../ordem-foundry-bridge.zip .
+          cd ../..
+          cp module.json dist/module.json
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            dist/module.json \
+            dist/ordem-foundry-bridge.zip \
+            --repo "${GITHUB_REPOSITORY}" \
+            --verify-tag \
+            --title "Ordem Foundry Bridge ${GITHUB_REF_NAME}" \
+            --generate-notes
