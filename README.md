@@ -24,6 +24,10 @@ em `Data/modules/ordem-foundry-bridge/`.
 Copie a pasta `ordem-foundry-bridge` para `Data/modules/` da instalação do
 Foundry e ative o módulo no mundo da campanha.
 
+Ao entrar no mundo pela primeira vez, o módulo informa que está ativo mas ainda
+não conectado. Esse aviso é esperado: ativação e registro seguro são etapas
+separadas.
+
 ## Registro do mundo
 
 1. Em **Configurações do módulo**, confira a URL do Bridge e o ID da campanha.
