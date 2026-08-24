@@ -2,12 +2,12 @@
   "id": "ordem-foundry-bridge",
   "title": "Ordem da Última Luz — Bridge",
   "description": "Conecta um mundo Shadow of the Demon Lord ao portal da Ordem da Última Luz usando apenas HTTPS de saída.",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "url": "https://github.com/guicaxero/founcord-module-foundryVTT",
   "manifest": "https://github.com/guicaxero/founcord-module-foundryVTT/releases/latest/download/module.json",
-  "download": "https://github.com/guicaxero/founcord-module-foundryVTT/releases/download/v0.2.0/ordem-foundry-bridge.zip",
+  "download": "https://github.com/guicaxero/founcord-module-foundryVTT/releases/download/v0.3.0/ordem-foundry-bridge.zip",
   "bugs": "https://github.com/guicaxero/founcord-module-foundryVTT/issues",
-  "changelog": "https://github.com/guicaxero/founcord-module-foundryVTT/releases/tag/v0.2.0",
+  "changelog": "https://github.com/guicaxero/founcord-module-foundryVTT/releases/tag/v0.3.0",
   "authors": [
     {
       "name": "Ordem da Última Luz"

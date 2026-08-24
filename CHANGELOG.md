@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.0 — 2026-08-24
+
+- Captura mensagens públicas do chat durante sessões iniciadas pelo portal.
+- Remove HTML e exclui sussurros, rolagens cegas e mensagens privadas.
+- Mantém uma fila local limitada e idempotente para tolerar quedas de conexão.
+- Envia somente projeções tipadas por HTTPS de saída para o Foundry Bridge.
+
 ## 0.2.0 — 2026-08-24
 
 - Substitui token de bootstrap, ID de campanha e console por pareamento guiado.

@@ -52,12 +52,19 @@ expira rapidamente e nunca é mostrado depois da conexão.
 - offline derivado após 90 segundos sem heartbeat;
 - polling de comandos a cada 5 segundos, com backoff em falhas;
 - sincronização integral dos personagens ao iniciar e após alterações;
+- captura somente de mensagens públicas durante sessões iniciadas pelo portal;
+- fila local de até 500 mensagens públicas para reenvio após indisponibilidade;
 - o navegador do mestre que concluiu o pareamento mantém a conexão; outro
   mestre pode iniciar um novo pareamento quando necessário.
 
 O módulo não sincroniza descrições, notas do mestre, inventário ou conteúdo de
 livros. Somente nome, nível, ancestralidade, caminhos, proprietários e recursos
 mecânicos mínimos são enviados ao portal.
+
+Durante uma sessão registrada no portal, o mestre conector envia uma projeção
+em texto simples das mensagens públicas do chat. Sussurros, rolagens cegas,
+mensagens privadas e HTML não são enviados. Fora de uma captura ativa, o Bridge
+descarta os lotes recebidos e o módulo remove esses itens da fila local.
 
 ## API local do módulo
 
