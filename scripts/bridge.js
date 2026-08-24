@@ -5,6 +5,8 @@ const DEFAULT_BRIDGE_URL =
   "https://ordem-foundry-bridge.ordem-da-ultima-luz.workers.dev";
 const HEARTBEAT_INTERVAL = 30_000;
 const DEFAULT_POLL_INTERVAL = 5_000;
+const CHAT_BATCH_SIZE = 25;
+const MAX_PENDING_CHAT_EVENTS = 500;
 
 let heartbeatTimer = null;
 let commandPollTimer = null;
@@ -16,6 +18,10 @@ let connectionApplication = null;
 let heartbeatInFlight = null;
 let syncInFlight = null;
 let renderingConnectionApplication = false;
+let chatFlushTimer = null;
+let chatFlushInFlight = null;
+let chatFlushFailures = 0;
+let chatQueueOperation = Promise.resolve();
 
 const { ApplicationV2, DialogV2, HandlebarsApplicationMixin } =
   foundry.applications.api;
@@ -67,7 +73,7 @@ class BridgeConnectionApplication extends HandlebarsApplicationMixin(
       feedback: this.feedback,
       feedbackIsError: this.feedback?.type === "error",
       bridgeUrlLocked: publicStatus().connected || publicStatus().pendingPairing,
-      moduleVersion: game.modules.get(MODULE_ID)?.version ?? "0.2.0",
+      moduleVersion: game.modules.get(MODULE_ID)?.version ?? "0.3.0",
       foundryVersion: game.version,
       systemVersion: game.system.version,
       systemTitle: game.system.title,
@@ -255,6 +261,7 @@ Hooks.on("updateUser", () => {
 
 Hooks.on("updateSetting", (setting) => {
   if (!String(setting?.key ?? "").startsWith(`${MODULE_ID}.`)) return;
+  if (setting.key === `${MODULE_ID}.pendingChatEvents`) return;
   if (isCredentialedGameMaster()) startBridge();
   else stopBridge();
   renderConnectionApplication();
@@ -265,6 +272,13 @@ for (const event of ["createActor", "updateActor", "deleteActor"]) {
     if (actor?.type === "character") scheduleCharacterSync();
   });
 }
+
+Hooks.on("createChatMessage", (message) => {
+  if (!isCredentialedGameMaster() || !isPublicChatMessage(message)) return;
+  const projection = chatMessageProjection(message);
+  if (!projection) return;
+  void enqueueChatEvent(projection).catch(handleOperationalError);
+});
 
 Hooks.once("shutdown", () => {
   stopBridge();
@@ -294,6 +308,7 @@ function registerSettings() {
   registerSetting("lastHeartbeatAt", { scope: "world", default: "" });
   registerSetting("lastSyncAt", { scope: "world", default: "" });
   registerSetting("lastSyncCount", { scope: "world", default: 0, type: Number });
+  registerSetting("pendingChatEvents", { scope: "world", default: [], type: Object });
   registerSetting("lastConnectionError", { scope: "client", default: "" });
 }
 
@@ -345,7 +360,7 @@ async function startPairing() {
       systemId: game.system.id,
       foundryVersion: game.version,
       systemVersion: game.system.version,
-      moduleVersion: moduleEntry?.version ?? "0.2.0",
+      moduleVersion: moduleEntry?.version ?? "0.3.0",
     },
   });
   await Promise.all([
@@ -522,15 +537,18 @@ function startBridge() {
   }
   if (!commandPollTimer) scheduleCommandPoll(0);
   scheduleCharacterSync(500);
+  scheduleChatFlush(500);
 }
 
 function stopBridge() {
   if (heartbeatTimer) globalThis.clearInterval(heartbeatTimer);
   if (commandPollTimer) globalThis.clearTimeout(commandPollTimer);
   if (syncTimer) globalThis.clearTimeout(syncTimer);
+  if (chatFlushTimer) globalThis.clearTimeout(chatFlushTimer);
   heartbeatTimer = null;
   commandPollTimer = null;
   syncTimer = null;
+  chatFlushTimer = null;
   pollingCommands = false;
 }
 
@@ -594,6 +612,144 @@ async function performCharacterSync() {
   ]);
   renderConnectionApplication();
   return { ...response, synchronizedCharacters: characters.length };
+}
+
+function isPublicChatMessage(message) {
+  const whisperRecipients = Array.isArray(message?.whisper) ? message.whisper : [];
+  return !message?.blind && whisperRecipients.length === 0;
+}
+
+function chatMessageProjection(message) {
+  const content = sanitizedChatContent(message);
+  if (!message?.id || !content) return null;
+  const author = message.author ?? game.users.get(message.user?.id ?? message.user);
+  const speakerActorId = nullableIdentifier(message.speaker?.actor);
+  const speakerActor = speakerActorId ? game.actors.get(speakerActorId) : null;
+  const speakerName = nullableText(
+    speakerActor?.name ?? message.speaker?.alias ?? message.alias,
+  );
+  const timestamp = Number(message.timestamp ?? message._stats?.createdTime ?? Date.now());
+  return {
+    messageId: String(message.id).slice(0, 128),
+    createdAt: new Date(Number.isFinite(timestamp) ? timestamp : Date.now()).toISOString(),
+    authorUserId: nullableIdentifier(author?.id),
+    authorName: nullableText(author?.name) ?? "Foundry",
+    speakerActorId,
+    speakerName,
+    content,
+    kind: Array.isArray(message.rolls) && message.rolls.length > 0 ? "roll" : "message",
+  };
+}
+
+function sanitizedChatContent(message) {
+  const container = document.createElement("div");
+  container.innerHTML = String(message?.content ?? "");
+  for (const element of container.querySelectorAll(
+    "script,style,template,noscript,iframe,object,embed,.secret,.gm-only,[data-secret],[data-gm-only],[data-visibility='gm'],[data-visibility='owner']",
+  )) {
+    element.remove();
+  }
+  for (const lineBreak of container.querySelectorAll("br")) {
+    lineBreak.replaceWith("\n");
+  }
+  for (const block of container.querySelectorAll("p,div,li,section,article,header,footer")) {
+    block.append("\n");
+  }
+  const visibleText = String(container.textContent ?? "")
+    .replace(/\u00a0/gu, " ")
+    .replace(/[ \t]+/gu, " ")
+    .replace(/ *\n */gu, "\n")
+    .replace(/\n{3,}/gu, "\n\n")
+    .trim();
+  const rollSummary = Array.isArray(message?.rolls)
+    ? message.rolls
+        .map((roll) => {
+          const formula = String(roll?.formula ?? "").trim();
+          const total = Number(roll?.total);
+          if (!formula || !Number.isFinite(total)) return null;
+          return `${formula} = ${total}`;
+        })
+        .filter(Boolean)
+        .join("; ")
+    : "";
+  return [visibleText, rollSummary ? `Rolagem: ${rollSummary}` : ""]
+    .filter(Boolean)
+    .join("\n")
+    .slice(0, 4_000)
+    .trim();
+}
+
+function nullableIdentifier(value) {
+  const identifier = typeof value === "string" ? value.trim() : "";
+  return identifier && /^[A-Za-z0-9._-]+$/u.test(identifier)
+    ? identifier.slice(0, 128)
+    : null;
+}
+
+async function enqueueChatEvent(event) {
+  await updateChatQueue((pending) => {
+    if (pending.some((candidate) => candidate.messageId === event.messageId)) return pending;
+    return [...pending, event].slice(-MAX_PENDING_CHAT_EVENTS);
+  });
+  scheduleChatFlush(250);
+}
+
+function scheduleChatFlush(delay) {
+  if (!isCredentialedGameMaster()) return;
+  if (chatFlushTimer) globalThis.clearTimeout(chatFlushTimer);
+  chatFlushTimer = globalThis.setTimeout(() => {
+    chatFlushTimer = null;
+    void flushChatEvents();
+  }, delay);
+}
+
+async function flushChatEvents() {
+  if (chatFlushInFlight || !isCredentialedGameMaster()) return chatFlushInFlight;
+  chatFlushInFlight = performChatFlush().finally(() => {
+    chatFlushInFlight = null;
+  });
+  return chatFlushInFlight;
+}
+
+async function performChatFlush() {
+  await chatQueueOperation;
+  const pending = pendingChatEvents();
+  if (pending.length === 0) return;
+  const batch = pending.slice(0, CHAT_BATCH_SIZE);
+  try {
+    await authenticatedRequest("/chat/batches", {
+      batchId: crypto.randomUUID(),
+      capturedAt: new Date().toISOString(),
+      messages: batch,
+    });
+    const sentIds = new Set(batch.map((event) => event.messageId));
+    await updateChatQueue((current) =>
+      current.filter((event) => !sentIds.has(event.messageId)),
+    );
+    chatFlushFailures = 0;
+    if (pendingChatEvents().length > 0) scheduleChatFlush(100);
+  } catch (error) {
+    chatFlushFailures += 1;
+    await handleOperationalError(error);
+    scheduleChatFlush(
+      Math.min(60_000, DEFAULT_POLL_INTERVAL * 2 ** Math.min(chatFlushFailures, 4)),
+    );
+  }
+}
+
+function pendingChatEvents() {
+  const stored = game.settings.get(MODULE_ID, "pendingChatEvents");
+  return Array.isArray(stored) ? stored : [];
+}
+
+function updateChatQueue(updater) {
+  chatQueueOperation = chatQueueOperation
+    .catch(() => undefined)
+    .then(async () => {
+      const updated = updater(pendingChatEvents());
+      await game.settings.set(MODULE_ID, "pendingChatEvents", updated);
+    });
+  return chatQueueOperation;
 }
 
 function scheduleCommandPoll(delay) {
