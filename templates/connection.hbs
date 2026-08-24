@@ -1,0 +1,175 @@
+<div class="ordem-bridge-app">
+  <header class="ordem-bridge-hero">
+    <span class="ordem-bridge-kicker">{{localize "ORDEM_BRIDGE.App.Kicker"}}</span>
+    <div class="ordem-bridge-title-row">
+      <div>
+        <h1>{{localize "ORDEM_BRIDGE.App.Heading"}}</h1>
+        <p>{{localize "ORDEM_BRIDGE.App.Subtitle"}}</p>
+      </div>
+      {{#if pendingPairing}}
+        <span class="ordem-bridge-state is-waiting"><i></i>{{localize "ORDEM_BRIDGE.Status.Waiting"}}</span>
+      {{else if connected}}
+        <span class="ordem-bridge-state is-online"><i></i>{{localize "ORDEM_BRIDGE.Status.Connected"}}</span>
+      {{else}}
+        <span class="ordem-bridge-state is-offline"><i></i>{{localize "ORDEM_BRIDGE.Status.Disconnected"}}</span>
+      {{/if}}
+    </div>
+  </header>
+
+  {{#if feedback}}
+    {{#if feedbackIsError}}
+      <div class="ordem-bridge-feedback is-error" role="alert">
+        <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+        <span>{{feedback.message}}</span>
+      </div>
+    {{else}}
+      <div class="ordem-bridge-feedback is-{{feedback.type}}" role="status">
+        <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+        <span>{{feedback.message}}</span>
+      </div>
+    {{/if}}
+  {{/if}}
+
+  {{#if hasConnectionError}}
+    <div class="ordem-bridge-feedback is-error" role="alert">
+      <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+      <div><strong>{{localize "ORDEM_BRIDGE.Errors.ConnectionTitle"}}</strong><span>{{lastConnectionError}}</span></div>
+      <button type="button" data-action="retry" {{#if busy}}disabled{{/if}}>{{localize "ORDEM_BRIDGE.Actions.TryAgain"}}</button>
+    </div>
+  {{/if}}
+
+  {{#if disconnected}}
+    <section class="ordem-bridge-section ordem-bridge-onboarding" aria-labelledby="ordem-disconnected-title">
+      <div class="ordem-bridge-world-identity">
+        <span class="ordem-bridge-world-mark" aria-hidden="true">◇</span>
+        <div>
+          <span>{{localize "ORDEM_BRIDGE.World.Current"}}</span>
+          <h2 id="ordem-disconnected-title">{{worldTitle}}</h2>
+          <p>{{systemTitle}} · Foundry {{foundryVersion}}</p>
+        </div>
+      </div>
+      <div class="ordem-bridge-onboarding-copy">
+        <span class="ordem-bridge-eyebrow">{{localize "ORDEM_BRIDGE.Status.NotConnected"}}</span>
+        <h3>{{localize "ORDEM_BRIDGE.Onboarding.Title"}}</h3>
+        <p>{{localize "ORDEM_BRIDGE.Onboarding.Description"}}</p>
+        <ul>
+          <li><i class="fa-solid fa-shield-halved" aria-hidden="true"></i>{{localize "ORDEM_BRIDGE.Onboarding.Safe"}}</li>
+          <li><i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>{{localize "ORDEM_BRIDGE.Onboarding.Outbound"}}</li>
+          <li><i class="fa-solid fa-user-lock" aria-hidden="true"></i>{{localize "ORDEM_BRIDGE.Onboarding.Permission"}}</li>
+        </ul>
+        <button class="ordem-bridge-primary" type="button" data-action="connect" {{#if busy}}disabled{{/if}}>
+          <i class="fa-solid fa-link" aria-hidden="true"></i>
+          {{#if connecting}}{{localize "ORDEM_BRIDGE.Actions.CreatingCode"}}{{else}}{{localize "ORDEM_BRIDGE.Actions.Connect"}}{{/if}}
+        </button>
+      </div>
+    </section>
+  {{/if}}
+
+  {{#if pendingPairing}}
+    <section class="ordem-bridge-section ordem-bridge-pairing" aria-labelledby="ordem-pairing-title">
+      {{#if pairingExpired}}
+        <div class="ordem-bridge-expired">
+          <span class="ordem-bridge-world-mark" aria-hidden="true">×</span>
+          <span class="ordem-bridge-eyebrow">{{localize "ORDEM_BRIDGE.Status.Expired"}}</span>
+          <h2 id="ordem-pairing-title">{{localize "ORDEM_BRIDGE.Pairing.ExpiredTitle"}}</h2>
+          <p>{{localize "ORDEM_BRIDGE.Pairing.ExpiredDescription"}}</p>
+          <button class="ordem-bridge-primary" type="button" data-action="connect" {{#if busy}}disabled{{/if}}>
+            {{#if connecting}}{{localize "ORDEM_BRIDGE.Actions.CreatingCode"}}{{else}}{{localize "ORDEM_BRIDGE.Actions.GenerateNewCode"}}{{/if}}
+          </button>
+        </div>
+      {{else}}
+        <div class="ordem-bridge-pairing-heading">
+          <div>
+            <span class="ordem-bridge-eyebrow">{{localize "ORDEM_BRIDGE.Status.Waiting"}}</span>
+            <h2 id="ordem-pairing-title">{{localize "ORDEM_BRIDGE.Pairing.Title"}}</h2>
+            <p>{{localize "ORDEM_BRIDGE.Pairing.Description"}}</p>
+          </div>
+          <span class="ordem-bridge-spinner" aria-hidden="true"></span>
+        </div>
+        <div class="ordem-bridge-code-block">
+          <label for="ordem-pairing-code">{{localize "ORDEM_BRIDGE.Pairing.CodeLabel"}}</label>
+          <output id="ordem-pairing-code" tabindex="0">{{userCode}}</output>
+          <small>{{localize "ORDEM_BRIDGE.Pairing.ValidUntil"}} {{pairingExpiresAt}}</small>
+        </div>
+        <ol class="ordem-bridge-steps">
+          <li><span>1</span><div><strong>{{localize "ORDEM_BRIDGE.Pairing.Step1Title"}}</strong><p>{{localize "ORDEM_BRIDGE.Pairing.Step1Text"}}</p></div></li>
+          <li><span>2</span><div><strong>{{localize "ORDEM_BRIDGE.Pairing.Step2Title"}}</strong><p>{{localize "ORDEM_BRIDGE.Pairing.Step2Text"}}</p></div></li>
+          <li><span>3</span><div><strong>{{localize "ORDEM_BRIDGE.Pairing.Step3Title"}}</strong><p>{{localize "ORDEM_BRIDGE.Pairing.Step3Text"}}</p></div></li>
+        </ol>
+        <div class="ordem-bridge-actions">
+          <button class="ordem-bridge-primary" type="button" data-action="openPortal">
+            <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>{{localize "ORDEM_BRIDGE.Actions.OpenPortal"}}
+          </button>
+          <button type="button" data-action="copyCode"><i class="fa-regular fa-copy" aria-hidden="true"></i>{{localize "ORDEM_BRIDGE.Actions.CopyCode"}}</button>
+          <button class="is-danger" type="button" data-action="cancelPairing" {{#if busy}}disabled{{/if}}>
+            {{#if cancelling}}{{localize "ORDEM_BRIDGE.Actions.Cancelling"}}{{else}}{{localize "ORDEM_BRIDGE.Actions.CancelRequest"}}{{/if}}
+          </button>
+        </div>
+      {{/if}}
+    </section>
+  {{/if}}
+
+  {{#if connected}}
+    <section class="ordem-bridge-section ordem-bridge-connected" aria-labelledby="ordem-connected-title">
+      <div class="ordem-bridge-connected-heading">
+        <div>
+          <span class="ordem-bridge-eyebrow">{{localize "ORDEM_BRIDGE.Status.Connected"}}</span>
+          <h2 id="ordem-connected-title">{{campaignName}}</h2>
+          <p>{{localize "ORDEM_BRIDGE.Connected.Description"}}</p>
+        </div>
+        <div class="ordem-bridge-connector">
+          <small>{{localize "ORDEM_BRIDGE.Connected.Connector"}}</small>
+          <strong>{{connectorName}}</strong>
+        </div>
+      </div>
+      <dl class="ordem-bridge-metrics">
+        <div><dt>{{localize "ORDEM_BRIDGE.Connected.LastContact"}}</dt><dd>{{#if lastHeartbeatAt}}{{lastHeartbeatAt}}{{else}}{{localize "ORDEM_BRIDGE.Common.Waiting"}}{{/if}}</dd></div>
+        <div><dt>{{localize "ORDEM_BRIDGE.Connected.LastSync"}}</dt><dd>{{#if lastSyncAt}}{{lastSyncAt}}{{else}}{{localize "ORDEM_BRIDGE.Common.Waiting"}}{{/if}}</dd></div>
+        <div><dt>{{localize "ORDEM_BRIDGE.Connected.Characters"}}</dt><dd>{{lastSyncCount}}</dd></div>
+      </dl>
+      {{#unless activeConnector}}
+        <div class="ordem-bridge-feedback is-warning" role="status">
+          <i class="fa-solid fa-user-shield" aria-hidden="true"></i>
+          <span>{{localize "ORDEM_BRIDGE.Connected.Passive"}}</span>
+          {{#if canTakeOver}}
+            <button type="button" data-action="connect" {{#if busy}}disabled{{/if}}>{{localize "ORDEM_BRIDGE.Actions.TakeOver"}}</button>
+          {{/if}}
+        </div>
+      {{/unless}}
+      <div class="ordem-bridge-character-card">
+        <div>
+          <i class="fa-solid fa-users" aria-hidden="true"></i>
+          <div><strong>{{localize "ORDEM_BRIDGE.Characters.Title"}}</strong><p>{{localize "ORDEM_BRIDGE.Characters.Description"}}</p></div>
+        </div>
+        <button type="button" data-action="syncNow" {{#unless activeConnector}}disabled{{/unless}} {{#if busy}}disabled{{/if}}>
+          <i class="fa-solid fa-rotate" aria-hidden="true"></i>{{#if syncing}}{{localize "ORDEM_BRIDGE.Actions.Syncing"}}{{else}}{{localize "ORDEM_BRIDGE.Actions.SyncNow"}}{{/if}}
+        </button>
+      </div>
+      <div class="ordem-bridge-danger-zone">
+        <div><strong>{{localize "ORDEM_BRIDGE.Disconnect.Title"}}</strong><p>{{localize "ORDEM_BRIDGE.Disconnect.Hint"}}</p></div>
+        <button class="is-danger" type="button" data-action="disconnect" {{#unless activeConnector}}disabled{{/unless}} {{#if busy}}disabled{{/if}}>
+          {{#if disconnecting}}{{localize "ORDEM_BRIDGE.Actions.Disconnecting"}}{{else}}{{localize "ORDEM_BRIDGE.Actions.Disconnect"}}{{/if}}
+        </button>
+      </div>
+    </section>
+  {{/if}}
+
+  <details class="ordem-bridge-technical">
+    <summary>{{localize "ORDEM_BRIDGE.Technical.Title"}}</summary>
+    <div class="ordem-bridge-technical-body">
+      <dl>
+        <div><dt>{{localize "ORDEM_BRIDGE.Technical.WorldId"}}</dt><dd>{{foundryWorldId}}</dd></div>
+        <div><dt>{{localize "ORDEM_BRIDGE.Technical.PortalWorldId"}}</dt><dd>{{#if worldId}}{{worldId}}{{else}}—{{/if}}</dd></div>
+        <div><dt>Foundry VTT</dt><dd>{{foundryVersion}}</dd></div>
+        <div><dt>{{localize "ORDEM_BRIDGE.Technical.System"}}</dt><dd>{{systemVersion}}</dd></div>
+        <div><dt>{{localize "ORDEM_BRIDGE.Technical.Module"}}</dt><dd>{{moduleVersion}}</dd></div>
+      </dl>
+      <label for="ordem-bridge-url">{{localize "ORDEM_BRIDGE.Technical.BridgeUrl"}}</label>
+      <div class="ordem-bridge-url-field">
+        <input id="ordem-bridge-url" name="bridgeUrl" type="url" value="{{bridgeUrl}}" spellcheck="false" {{#if bridgeUrlLocked}}disabled{{/if}} />
+        <button type="button" data-action="saveBridgeUrl" {{#if bridgeUrlLocked}}disabled{{/if}} {{#if busy}}disabled{{/if}}>{{#if savingUrl}}{{localize "ORDEM_BRIDGE.Actions.Saving"}}{{else}}{{localize "ORDEM_BRIDGE.Actions.SaveUrl"}}{{/if}}</button>
+      </div>
+      <p>{{localize "ORDEM_BRIDGE.Technical.UrlHint"}}</p>
+    </div>
+  </details>
+</div>
