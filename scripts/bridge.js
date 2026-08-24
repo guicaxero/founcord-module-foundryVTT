@@ -19,8 +19,11 @@ Hooks.once("ready", async () => {
   exposeApi();
   if (!isPrimaryGameMaster()) return;
   if (!connection().accessToken || !connection().worldId) {
-    ui.notifications.warn(
-      game.i18n.localize("ORDEM_BRIDGE.Notifications.RegistrationRequired"),
+    ui.notifications.info(
+      localize(
+        "ORDEM_BRIDGE.Notifications.RegistrationRequired",
+        "Módulo ativado. Este mundo ainda não está conectado ao portal.",
+      ),
     );
     return;
   }
@@ -122,7 +125,12 @@ async function registerWorld(enrollmentToken) {
   pollFailures = 0;
   startBridge();
   await Promise.all([sendHeartbeat(), syncCharacters()]);
-  ui.notifications.info(game.i18n.localize("ORDEM_BRIDGE.Notifications.Registered"));
+  ui.notifications.info(
+    localize(
+      "ORDEM_BRIDGE.Notifications.Registered",
+      "Mundo conectado com segurança ao portal da Ordem.",
+    ),
+  );
   return publicStatus();
 }
 
@@ -371,6 +379,11 @@ function safeInteger(value) {
 function nullableText(value) {
   const text = typeof value === "string" ? value.trim() : "";
   return text ? text.slice(0, 120) : null;
+}
+
+function localize(key, fallback) {
+  const translation = game.i18n.localize(key);
+  return translation === key ? fallback : translation;
 }
 
 function logConnectionError(error) {

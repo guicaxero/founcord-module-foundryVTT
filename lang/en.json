@@ -1,0 +1,10 @@
+{
+  "ORDEM_BRIDGE.Settings.BridgeUrl.Name": "Foundry Bridge URL",
+  "ORDEM_BRIDGE.Settings.BridgeUrl.Hint": "HTTPS endpoint published by Ordem da Última Luz.",
+  "ORDEM_BRIDGE.Settings.CampaignId.Name": "Campaign ID",
+  "ORDEM_BRIDGE.Settings.CampaignId.Hint": "Identifier provided by the portal administrator.",
+  "ORDEM_BRIDGE.Notifications.RegistrationRequired": "Module enabled. This world is not connected to the portal yet; see the module README to complete registration.",
+  "ORDEM_BRIDGE.Notifications.Registered": "World securely connected to the Ordem portal.",
+  "ORDEM_BRIDGE.Notifications.SyncComplete": "Characters synchronized with the Ordem portal.",
+  "ORDEM_BRIDGE.Notifications.ConnectionFailed": "Foundry Bridge could not reach the portal. It will retry automatically."
+}
