@@ -30,7 +30,7 @@ jobs:
         run: |
           mkdir -p dist/package
           cp module.json README.md CHANGELOG.md dist/package/
-          cp -R lang scripts dist/package/
+          cp -R lang scripts styles templates dist/package/
           cd dist/package
           zip -r ../ordem-foundry-bridge.zip .
           cd ../..

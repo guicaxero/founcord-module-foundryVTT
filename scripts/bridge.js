@@ -3,36 +3,261 @@
 const MODULE_ID = "ordem-foundry-bridge";
 const DEFAULT_BRIDGE_URL =
   "https://ordem-foundry-bridge.ordem-da-ultima-luz.workers.dev";
-const DEFAULT_CAMPAIGN_ID = "11111111-1111-4111-8111-111111111111";
+const HEARTBEAT_INTERVAL = 30_000;
+const DEFAULT_POLL_INTERVAL = 5_000;
 
 let heartbeatTimer = null;
-let pollTimer = null;
+let commandPollTimer = null;
 let syncTimer = null;
-let polling = false;
-let pollFailures = 0;
+let pairingPollTimer = null;
+let pollingCommands = false;
+let commandPollFailures = 0;
+let connectionApplication = null;
+let heartbeatInFlight = null;
+let syncInFlight = null;
+let renderingConnectionApplication = false;
 
-Hooks.once("init", () => {
-  registerSettings();
-});
+const { ApplicationV2, DialogV2, HandlebarsApplicationMixin } =
+  foundry.applications.api;
+
+class BridgeConnectionApplication extends HandlebarsApplicationMixin(
+  ApplicationV2,
+) {
+  static DEFAULT_OPTIONS = {
+    id: "ordem-foundry-connection",
+    classes: ["ordem-bridge-window"],
+    window: {
+      title: "ORDEM_BRIDGE.App.Title",
+      icon: "fa-solid fa-fire-flame-curved",
+      resizable: true,
+    },
+    position: { width: 720, height: "auto" },
+    actions: {
+      connect: this.connect,
+      copyCode: this.copyCode,
+      openPortal: this.openPortal,
+      cancelPairing: this.cancelPairing,
+      syncNow: this.syncNow,
+      disconnect: this.disconnect,
+      saveBridgeUrl: this.saveBridgeUrl,
+      retry: this.retry,
+    },
+  };
+
+  static PARTS = {
+    main: {
+      template: `modules/${MODULE_ID}/templates/connection.hbs`,
+    },
+  };
+
+  busyAction = null;
+  feedback = null;
+
+  async _prepareContext(options) {
+    const context = await super._prepareContext(options);
+    return {
+      ...context,
+      ...publicStatus(),
+      busy: Boolean(this.busyAction),
+      connecting: this.busyAction === "connect",
+      cancelling: this.busyAction === "cancel",
+      syncing: this.busyAction === "sync",
+      disconnecting: this.busyAction === "disconnect",
+      savingUrl: this.busyAction === "save-url",
+      feedback: this.feedback,
+      feedbackIsError: this.feedback?.type === "error",
+      bridgeUrlLocked: publicStatus().connected || publicStatus().pendingPairing,
+      moduleVersion: game.modules.get(MODULE_ID)?.version ?? "0.2.0",
+      foundryVersion: game.version,
+      systemVersion: game.system.version,
+      systemTitle: game.system.title,
+      bridgeUrl: bridgeUrl(),
+    };
+  }
+
+  async _onFirstRender(context, options) {
+    await super._onFirstRender(context, options);
+    // The active application is refreshed by background bridge events.
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    connectionApplication = this;
+  }
+
+  async _onClose(options) {
+    if (connectionApplication === this) connectionApplication = null;
+    await super._onClose(options);
+  }
+
+  async runOperation(action, operation, successMessage = null) {
+    if (this.busyAction) return;
+    this.busyAction = action;
+    this.feedback = null;
+    await this.render();
+    try {
+      await operation();
+      if (successMessage) {
+        this.feedback = { type: "success", message: successMessage };
+      }
+    } catch (error) {
+      const message = friendlyError(error);
+      this.feedback = { type: "error", message };
+      ui.notifications.error(message);
+    } finally {
+      this.busyAction = null;
+      await this.render();
+    }
+  }
+
+  static async connect() {
+    await this.runOperation("connect", startPairing);
+  }
+
+  static async copyCode() {
+    const code = pairing().userCode;
+    if (!code) return;
+    try {
+      await navigator.clipboard.writeText(code);
+      this.feedback = {
+        type: "success",
+        message: localize("ORDEM_BRIDGE.Feedback.CodeCopied", "Código copiado."),
+      };
+    } catch {
+      this.feedback = {
+        type: "error",
+        message: localize(
+          "ORDEM_BRIDGE.Feedback.CopyFailed",
+          "Não foi possível copiar automaticamente. Selecione o código e copie manualmente.",
+        ),
+      };
+    }
+    await this.render();
+  }
+
+  static async openPortal() {
+    const url = pairing().verificationUrl;
+    if (url) globalThis.open(url, "_blank", "noopener,noreferrer");
+  }
+
+  static async cancelPairing() {
+    await this.runOperation(
+      "cancel",
+      cancelPairing,
+      localize("ORDEM_BRIDGE.Feedback.PairingCancelled", "Solicitação cancelada."),
+    );
+  }
+
+  static async syncNow() {
+    await this.runOperation(
+      "sync",
+      syncCharacters,
+      localize(
+        "ORDEM_BRIDGE.Feedback.SyncComplete",
+        "Personagens sincronizados com o portal.",
+      ),
+    );
+  }
+
+  static async disconnect() {
+    const campaignName = connection().campaignName || localize(
+      "ORDEM_BRIDGE.Common.LinkedCampaign",
+      "a campanha vinculada",
+    );
+    const confirmed = await DialogV2.confirm({
+      window: {
+        title: localize("ORDEM_BRIDGE.Disconnect.Title", "Desconectar este mundo"),
+      },
+      content: `<p>${foundry.utils.escapeHTML(
+        formatLocalized(
+          "ORDEM_BRIDGE.Disconnect.Body",
+          { campaignName },
+          `O portal deixará de receber presença, personagens e comandos deste mundo em ${campaignName}. Nenhum personagem será apagado.`,
+        ),
+      )}</p>`,
+      yes: {
+        label: localize("ORDEM_BRIDGE.Actions.Disconnect", "Desconectar mundo"),
+        icon: "fa-solid fa-link-slash",
+      },
+      no: {
+        label: localize("ORDEM_BRIDGE.Actions.KeepConnection", "Manter conexão"),
+      },
+      modal: true,
+      rejectClose: false,
+    });
+    if (!confirmed) return;
+    await this.runOperation(
+      "disconnect",
+      disconnect,
+      localize("ORDEM_BRIDGE.Feedback.Disconnected", "Mundo desconectado do portal."),
+    );
+  }
+
+  static async saveBridgeUrl() {
+    const input = this.element.querySelector("[name='bridgeUrl']");
+    const value = input instanceof HTMLInputElement ? input.value.trim() : "";
+    await this.runOperation(
+      "save-url",
+      () => saveBridgeUrl(value),
+      localize("ORDEM_BRIDGE.Feedback.UrlSaved", "Endereço do Bridge atualizado."),
+    );
+  }
+
+  static async retry() {
+    const current = pairing();
+    if (current.pairingId && current.deviceCode && !current.expired && !current.terminal) {
+      schedulePairingPoll(0);
+      this.feedback = {
+        type: "success",
+        message: localize(
+          "ORDEM_BRIDGE.Feedback.Retrying",
+          "Nova tentativa iniciada. A tela será atualizada automaticamente.",
+        ),
+      };
+      await this.render();
+      return;
+    }
+    await this.runOperation("connect", startPairing);
+  }
+}
+
+Hooks.once("init", () => registerSettings());
 
 Hooks.once("ready", async () => {
   exposeApi();
-  if (!isPrimaryGameMaster()) return;
-  if (!connection().accessToken || !connection().worldId) {
-    ui.notifications.info(
-      localize(
-        "ORDEM_BRIDGE.Notifications.RegistrationRequired",
-        "Módulo ativado. Este mundo ainda não está conectado ao portal.",
-      ),
-    );
+  if (!game.user?.isGM) return;
+  const pending = pairing();
+  if (pending.pairingId && pending.deviceCode && !pending.expired) {
+    schedulePairingPoll(0);
+  }
+  if (connection().accessToken && connection().worldId) {
+    startBridge();
+    void sendHeartbeat().catch(handleOperationalError);
     return;
   }
-  startBridge();
+  ui.notifications.info(
+    localize(
+      "ORDEM_BRIDGE.Notifications.RegistrationRequired",
+      "Módulo ativado. Abra a tela da Ordem nas configurações para conectar este mundo.",
+    ),
+  );
 });
 
 Hooks.on("updateUser", () => {
-  if (isPrimaryGameMaster() && connection().accessToken) startBridge();
+  if (!isPrimaryGameMaster()) stopPairingPoll();
+  else {
+    const pending = pairing();
+    if (pending.pairingId && pending.deviceCode && !pending.expired && !pending.terminal) {
+      schedulePairingPoll(0);
+    }
+  }
+  if (isCredentialedGameMaster()) startBridge();
   else stopBridge();
+  renderConnectionApplication();
+});
+
+Hooks.on("updateSetting", (setting) => {
+  if (!String(setting?.key ?? "").startsWith(`${MODULE_ID}.`)) return;
+  if (isCredentialedGameMaster()) startBridge();
+  else stopBridge();
+  renderConnectionApplication();
 });
 
 for (const event of ["createActor", "updateActor", "deleteActor"]) {
@@ -43,45 +268,42 @@ for (const event of ["createActor", "updateActor", "deleteActor"]) {
 
 Hooks.once("shutdown", () => {
   stopBridge();
+  stopPairingPoll();
 });
 
 function registerSettings() {
-  game.settings.register(MODULE_ID, "bridgeUrl", {
-    name: "ORDEM_BRIDGE.Settings.BridgeUrl.Name",
-    hint: "ORDEM_BRIDGE.Settings.BridgeUrl.Hint",
-    scope: "world",
-    config: true,
+  game.settings.registerMenu(MODULE_ID, "connection", {
+    name: "ORDEM_BRIDGE.Settings.Connection.Name",
+    label: "ORDEM_BRIDGE.Settings.Connection.Label",
+    hint: "ORDEM_BRIDGE.Settings.Connection.Hint",
+    icon: "fa-solid fa-fire-flame-curved",
+    type: BridgeConnectionApplication,
     restricted: true,
-    type: String,
-    default: DEFAULT_BRIDGE_URL,
   });
-  game.settings.register(MODULE_ID, "campaignId", {
-    name: "ORDEM_BRIDGE.Settings.CampaignId.Name",
-    hint: "ORDEM_BRIDGE.Settings.CampaignId.Hint",
-    scope: "world",
-    config: true,
-    restricted: true,
-    type: String,
-    default: DEFAULT_CAMPAIGN_ID,
-  });
-  game.settings.register(MODULE_ID, "worldInstanceId", {
-    scope: "world",
+  registerSetting("bridgeUrl", { scope: "world", default: DEFAULT_BRIDGE_URL });
+  registerSetting("worldInstanceId", { scope: "world", default: "" });
+  registerSetting("connectionRecord", { scope: "world", default: {}, type: Object });
+  registerSetting("accessToken", { scope: "client", default: "" });
+  registerSetting("accessTokenGeneration", { scope: "client", default: "" });
+  registerSetting("pairingId", { scope: "client", default: "" });
+  registerSetting("pairingDeviceCode", { scope: "client", default: "" });
+  registerSetting("pairingUserCode", { scope: "client", default: "" });
+  registerSetting("pairingVerificationUrl", { scope: "client", default: "" });
+  registerSetting("pairingExpiresAt", { scope: "client", default: "" });
+  registerSetting("pairingTerminalStatus", { scope: "client", default: "" });
+  registerSetting("lastHeartbeatAt", { scope: "world", default: "" });
+  registerSetting("lastSyncAt", { scope: "world", default: "" });
+  registerSetting("lastSyncCount", { scope: "world", default: 0, type: Number });
+  registerSetting("lastConnectionError", { scope: "client", default: "" });
+}
+
+function registerSetting(key, options) {
+  game.settings.register(MODULE_ID, key, {
+    scope: options.scope,
     config: false,
-    restricted: true,
-    type: String,
-    default: "",
-  });
-  game.settings.register(MODULE_ID, "worldId", {
-    scope: "client",
-    config: false,
-    type: String,
-    default: "",
-  });
-  game.settings.register(MODULE_ID, "accessToken", {
-    scope: "client",
-    config: false,
-    type: String,
-    default: "",
+    restricted: options.scope === "world",
+    type: options.type ?? String,
+    default: options.default,
   });
 }
 
@@ -89,101 +311,274 @@ function exposeApi() {
   const moduleEntry = game.modules.get(MODULE_ID);
   if (!moduleEntry) return;
   moduleEntry.api = Object.freeze({
-    registerWorld,
+    open: () => new BridgeConnectionApplication().render({ force: true }),
+    startPairing,
     disconnect,
     syncNow: syncCharacters,
     status: publicStatus,
   });
 }
 
-async function registerWorld(enrollmentToken) {
+async function startPairing() {
+  assertGameMaster();
   assertPrimaryGameMaster();
-  if (typeof enrollmentToken !== "string" || enrollmentToken.length < 32) {
-    throw new Error("Informe um token de registro válido.");
+  if (game.system.id !== "demonlord") {
+    throw new Error(
+      localize(
+        "ORDEM_BRIDGE.Errors.IncompatibleSystem",
+        "Este módulo requer um mundo de Shadow of the Demon Lord.",
+      ),
+    );
   }
+  stopPairingPoll();
   let worldInstanceId = game.settings.get(MODULE_ID, "worldInstanceId");
   if (!worldInstanceId) {
     worldInstanceId = crypto.randomUUID();
     await game.settings.set(MODULE_ID, "worldInstanceId", worldInstanceId);
   }
   const moduleEntry = game.modules.get(MODULE_ID);
-  const response = await bridgeRequest("/v1/worlds/register", {
-    token: enrollmentToken,
+  const response = await bridgeRequest("/v1/pairings", {
     body: {
-      campaignId: game.settings.get(MODULE_ID, "campaignId"),
       worldInstanceId,
       foundryWorldId: game.world.id,
       worldTitle: game.world.title,
       systemId: game.system.id,
       foundryVersion: game.version,
       systemVersion: game.system.version,
-      moduleVersion: moduleEntry?.version ?? "0.1.0",
+      moduleVersion: moduleEntry?.version ?? "0.2.0",
     },
   });
-  await game.settings.set(MODULE_ID, "worldId", response.worldId);
-  await game.settings.set(MODULE_ID, "accessToken", response.accessToken);
-  pollFailures = 0;
-  startBridge();
-  await Promise.all([sendHeartbeat(), syncCharacters()]);
-  ui.notifications.info(
-    localize(
-      "ORDEM_BRIDGE.Notifications.Registered",
-      "Mundo conectado com segurança ao portal da Ordem.",
+  await Promise.all([
+    game.settings.set(MODULE_ID, "pairingId", response.pairingId),
+    game.settings.set(MODULE_ID, "pairingDeviceCode", response.deviceCode),
+    game.settings.set(MODULE_ID, "pairingUserCode", response.userCode),
+    game.settings.set(
+      MODULE_ID,
+      "pairingVerificationUrl",
+      response.verificationUriComplete,
     ),
-  );
-  return publicStatus();
+    game.settings.set(MODULE_ID, "pairingExpiresAt", response.expiresAt),
+    game.settings.set(MODULE_ID, "lastConnectionError", ""),
+    game.settings.set(MODULE_ID, "pairingTerminalStatus", ""),
+  ]);
+  schedulePairingPoll(response.pollIntervalSeconds * 1_000);
+}
+
+function schedulePairingPoll(delay = DEFAULT_POLL_INTERVAL) {
+  stopPairingPoll();
+  pairingPollTimer = globalThis.setTimeout(() => {
+    pairingPollTimer = null;
+    void pollPairing();
+  }, delay);
+}
+
+function stopPairingPoll() {
+  if (pairingPollTimer) globalThis.clearTimeout(pairingPollTimer);
+  pairingPollTimer = null;
+}
+
+async function pollPairing() {
+  const current = pairing();
+  const connectionGenerationAtStart = connection().connectionGeneration;
+  if (!isPrimaryGameMaster()) {
+    stopPairingPoll();
+    await game.settings.set(
+      MODULE_ID,
+      "lastConnectionError",
+      localize(
+        "ORDEM_BRIDGE.Errors.PrimaryChanged",
+        "O mestre ativo mudou. O pareamento foi pausado neste navegador.",
+      ),
+    );
+    renderConnectionApplication();
+    return;
+  }
+  if (!current.pairingId || !current.deviceCode || current.expired) {
+    renderConnectionApplication();
+    return;
+  }
+  try {
+    const response = await bridgeRequest(
+      `/v1/pairings/${current.pairingId}/poll`,
+      { token: current.deviceCode, body: {} },
+    );
+    if (response.status === "pending") {
+      schedulePairingPoll(response.pollIntervalSeconds * 1_000);
+      return;
+    }
+    if (!isPrimaryGameMaster()) {
+      await bridgeRequest(`/v1/worlds/${response.worldId}/revoke`, {
+        token: response.accessToken,
+        body: {},
+      }).catch(() => undefined);
+      await clearPairing();
+      await clearLocalCredential(connectionGenerationAtStart);
+      throw new Error(
+        localize(
+          "ORDEM_BRIDGE.Errors.PrimaryChanged",
+          "O mestre ativo mudou durante a autorização. Inicie um novo pareamento.",
+        ),
+      );
+    }
+    const connectionGeneration = crypto.randomUUID();
+    await Promise.all([
+      game.settings.set(MODULE_ID, "accessToken", response.accessToken),
+      game.settings.set(MODULE_ID, "accessTokenGeneration", connectionGeneration),
+      game.settings.set(MODULE_ID, "lastConnectionError", ""),
+    ]);
+    await game.settings.set(MODULE_ID, "connectionRecord", {
+      worldId: response.worldId,
+      campaignId: response.campaignId,
+      campaignName: response.campaignName,
+      connectorName: game.user.name,
+      generation: connectionGeneration,
+    });
+    await clearPairing();
+    startBridge();
+    await sendHeartbeat();
+    ui.notifications.info(
+      localize(
+        "ORDEM_BRIDGE.Notifications.Registered",
+        "Mundo conectado com segurança ao portal da Ordem.",
+      ),
+    );
+    renderConnectionApplication();
+  } catch (error) {
+    const code = error instanceof BridgeRequestError ? error.code : "";
+    await game.settings.set(MODULE_ID, "lastConnectionError", friendlyError(error));
+    if (["pairing_expired", "pairing_cancelled", "pairing_consumed"].includes(code)) {
+      await game.settings.set(MODULE_ID, "pairingTerminalStatus", code);
+      stopPairingPoll();
+    } else {
+      schedulePairingPoll(Math.min(30_000, DEFAULT_POLL_INTERVAL * 2));
+    }
+    renderConnectionApplication();
+  }
+}
+
+async function cancelPairing() {
+  assertGameMaster();
+  const current = pairing();
+  stopPairingPoll();
+  if (current.pairingId && current.deviceCode && !current.expired) {
+    await bridgeRequest(`/v1/pairings/${current.pairingId}`, {
+      method: "DELETE",
+      token: current.deviceCode,
+    });
+  }
+  await clearPairing();
+  await game.settings.set(MODULE_ID, "lastConnectionError", "");
+}
+
+async function clearPairing() {
+  await Promise.all([
+    game.settings.set(MODULE_ID, "pairingId", ""),
+    game.settings.set(MODULE_ID, "pairingDeviceCode", ""),
+    game.settings.set(MODULE_ID, "pairingUserCode", ""),
+    game.settings.set(MODULE_ID, "pairingVerificationUrl", ""),
+    game.settings.set(MODULE_ID, "pairingExpiresAt", ""),
+    game.settings.set(MODULE_ID, "pairingTerminalStatus", ""),
+  ]);
 }
 
 async function disconnect() {
   assertGameMaster();
+  const current = connection();
+  if (current.worldId && current.accessToken) {
+    await authenticatedRequest("/revoke", {});
+  }
   stopBridge();
-  await game.settings.set(MODULE_ID, "worldId", "");
-  await game.settings.set(MODULE_ID, "accessToken", "");
-  return publicStatus();
+  await clearConnection();
+}
+
+async function clearConnection() {
+  await Promise.all([
+    game.settings.set(MODULE_ID, "connectionRecord", {}),
+    game.settings.set(MODULE_ID, "accessToken", ""),
+    game.settings.set(MODULE_ID, "accessTokenGeneration", ""),
+    game.settings.set(MODULE_ID, "lastHeartbeatAt", ""),
+    game.settings.set(MODULE_ID, "lastSyncAt", ""),
+    game.settings.set(MODULE_ID, "lastSyncCount", 0),
+    game.settings.set(MODULE_ID, "lastConnectionError", ""),
+  ]);
+}
+
+async function clearLocalCredential(expectedGeneration = null) {
+  const currentGeneration = game.settings.get(MODULE_ID, "accessTokenGeneration");
+  if (expectedGeneration && currentGeneration && currentGeneration !== expectedGeneration) return;
+  await Promise.all([
+    game.settings.set(MODULE_ID, "accessToken", ""),
+    game.settings.set(MODULE_ID, "accessTokenGeneration", ""),
+    game.settings.set(MODULE_ID, "lastConnectionError", ""),
+  ]);
 }
 
 function startBridge() {
-  if (!isPrimaryGameMaster() || !connection().accessToken) return;
+  if (!isCredentialedGameMaster()) return;
   if (!heartbeatTimer) {
     heartbeatTimer = globalThis.setInterval(() => {
-      void sendHeartbeat().catch(logConnectionError);
-    }, 30_000);
+      void sendHeartbeat().catch(handleOperationalError);
+    }, HEARTBEAT_INTERVAL);
   }
-  if (!pollTimer) schedulePoll(0);
+  if (!commandPollTimer) scheduleCommandPoll(0);
   scheduleCharacterSync(500);
 }
 
 function stopBridge() {
   if (heartbeatTimer) globalThis.clearInterval(heartbeatTimer);
-  if (pollTimer) globalThis.clearTimeout(pollTimer);
+  if (commandPollTimer) globalThis.clearTimeout(commandPollTimer);
   if (syncTimer) globalThis.clearTimeout(syncTimer);
   heartbeatTimer = null;
-  pollTimer = null;
+  commandPollTimer = null;
   syncTimer = null;
-  polling = false;
+  pollingCommands = false;
 }
 
 async function sendHeartbeat() {
-  if (!isPrimaryGameMaster()) return;
+  if (heartbeatInFlight) return heartbeatInFlight;
+  heartbeatInFlight = performHeartbeat().finally(() => {
+    heartbeatInFlight = null;
+  });
+  return heartbeatInFlight;
+}
+
+async function performHeartbeat() {
+  if (!isCredentialedGameMaster()) return;
   const characters = game.actors.filter((actor) => actor.type === "character");
   await authenticatedRequest("/heartbeat", {
     observedAt: new Date().toISOString(),
     activeUsers: game.users.filter((user) => user.active).length,
     actorCount: characters.length,
   });
+  await Promise.all([
+    game.settings.set(MODULE_ID, "lastHeartbeatAt", new Date().toISOString()),
+    game.settings.set(MODULE_ID, "lastConnectionError", ""),
+  ]);
+  renderConnectionApplication();
 }
 
 function scheduleCharacterSync(delay = 2_000) {
-  if (!isPrimaryGameMaster() || !connection().accessToken) return;
+  if (!isCredentialedGameMaster()) return;
   if (syncTimer) globalThis.clearTimeout(syncTimer);
   syncTimer = globalThis.setTimeout(() => {
     syncTimer = null;
-    void syncCharacters().catch(logConnectionError);
+    void syncCharacters().catch(handleOperationalError);
   }, delay);
 }
 
 async function syncCharacters() {
+  if (syncInFlight) return syncInFlight;
+  syncInFlight = performCharacterSync().finally(() => {
+    syncInFlight = null;
+  });
+  return syncInFlight;
+}
+
+async function performCharacterSync() {
   assertGameMaster();
+  if (!isCredentialedGameMaster()) {
+    throw new Error(localize("ORDEM_BRIDGE.Errors.PrimaryGmOnly", "Somente o mestre conector ativo pode sincronizar este mundo."));
+  }
   const characters = game.actors
     .filter((actor) => actor.type === "character")
     .map(characterProjection);
@@ -192,33 +587,44 @@ async function syncCharacters() {
     capturedAt: new Date().toISOString(),
     characters,
   });
+  await Promise.all([
+    game.settings.set(MODULE_ID, "lastSyncAt", new Date().toISOString()),
+    game.settings.set(MODULE_ID, "lastSyncCount", characters.length),
+    game.settings.set(MODULE_ID, "lastConnectionError", ""),
+  ]);
+  renderConnectionApplication();
   return { ...response, synchronizedCharacters: characters.length };
 }
 
-function schedulePoll(delay) {
-  if (pollTimer) globalThis.clearTimeout(pollTimer);
-  pollTimer = globalThis.setTimeout(() => {
-    pollTimer = null;
+function scheduleCommandPoll(delay) {
+  if (commandPollTimer) globalThis.clearTimeout(commandPollTimer);
+  commandPollTimer = globalThis.setTimeout(() => {
+    commandPollTimer = null;
     void pollCommands();
   }, delay);
 }
 
 async function pollCommands() {
-  if (polling || !isPrimaryGameMaster() || !connection().accessToken) return;
-  polling = true;
+  if (pollingCommands || !isCredentialedGameMaster()) return;
+  pollingCommands = true;
   try {
     const response = await authenticatedRequest("/commands/poll", { limit: 10 });
     for (const command of response.commands ?? []) {
       await executeAndAcknowledge(command);
     }
-    pollFailures = 0;
+    commandPollFailures = 0;
   } catch (error) {
-    pollFailures += 1;
-    logConnectionError(error);
+    commandPollFailures += 1;
+    await handleOperationalError(error);
   } finally {
-    polling = false;
-    const delay = Math.min(60_000, 5_000 * 2 ** Math.min(pollFailures, 4));
-    schedulePoll(delay);
+    pollingCommands = false;
+    if (connection().accessToken) {
+      const delay = Math.min(
+        60_000,
+        DEFAULT_POLL_INTERVAL * 2 ** Math.min(commandPollFailures, 4),
+      );
+      scheduleCommandPoll(delay);
+    }
   }
 }
 
@@ -230,7 +636,9 @@ async function executeAndAcknowledge(command) {
     result = await executeCommand(command);
   } catch (error) {
     outcome = "failed";
-    errorMessage = error instanceof Error ? error.message.slice(0, 1_000) : "Falha desconhecida.";
+    errorMessage = error instanceof Error
+      ? error.message.slice(0, 1_000)
+      : "Falha desconhecida.";
   }
   await authenticatedRequest(`/commands/${command.id}/result`, {
     deliveryToken: command.deliveryToken,
@@ -252,7 +660,10 @@ async function executeCommand(command) {
     if (command.payload.speakerActorId && !actor) {
       throw new Error("O personagem indicado como autor não existe neste mundo.");
     }
-    const escaped = foundry.utils.escapeHTML(command.payload.content).replaceAll("\n", "<br>");
+    const escaped = foundry.utils.escapeHTML(command.payload.content).replaceAll(
+      "\n",
+      "<br>",
+    );
     const message = await ChatMessage.create({
       content: escaped,
       speaker: actor
@@ -277,7 +688,10 @@ function characterProjection(actor) {
     name: actor.name,
     type: "character",
     ownerUserIds: Object.entries(actor.ownership ?? {})
-      .filter(([userId, level]) => userId !== "default" && Number(level) >= ownershipLevel)
+      .filter(
+        ([userId, level]) =>
+          userId !== "default" && Number(level) >= ownershipLevel,
+      )
       .map(([userId]) => userId),
     level: safeInteger(system.level),
     ancestry: nullableText(system.ancestry),
@@ -286,10 +700,16 @@ function characterProjection(actor) {
       healthMax: safeInteger(health.max),
       damage: safeInteger(health.value),
       healingRate: safeInteger(health.healingRate ?? health.healingrate),
-      insanity: safeInteger(characteristics.insanity?.value ?? characteristics.insanity),
-      corruption: safeInteger(characteristics.corruption?.value ?? characteristics.corruption),
+      insanity: safeInteger(
+        characteristics.insanity?.value ?? characteristics.insanity,
+      ),
+      corruption: safeInteger(
+        characteristics.corruption?.value ?? characteristics.corruption,
+      ),
     },
-    sourceUpdatedAt: new Date(Number.isFinite(modifiedTime) ? modifiedTime : Date.now()).toISOString(),
+    sourceUpdatedAt: new Date(
+      Number.isFinite(modifiedTime) ? modifiedTime : Date.now(),
+    ).toISOString(),
   };
 }
 
@@ -310,64 +730,187 @@ function pathNames(actor, legacyPaths) {
 
 async function authenticatedRequest(path, body) {
   const current = connection();
-  if (!current.worldId || !current.accessToken) throw new Error("Mundo não registrado.");
-  return bridgeRequest(`/v1/worlds/${current.worldId}${path}`, {
-    token: current.accessToken,
-    body,
-  });
+  if (!current.worldId || !current.accessToken) {
+    throw new Error(
+      localize("ORDEM_BRIDGE.Errors.NotConnected", "Este mundo ainda não está conectado."),
+    );
+  }
+  try {
+    return await bridgeRequest(`/v1/worlds/${current.worldId}${path}`, {
+      token: current.accessToken,
+      body,
+    });
+  } catch (error) {
+    if (error && typeof error === "object") {
+      error.connectionGeneration = current.connectionGeneration;
+      error.worldId = current.worldId;
+    }
+    throw error;
+  }
 }
 
-async function bridgeRequest(path, { token, body }) {
-  const baseUrl = String(game.settings.get(MODULE_ID, "bridgeUrl")).replace(/\/+$/u, "");
-  const response = await fetch(`${baseUrl}${path}`, {
-    method: "POST",
-    headers: {
-      authorization: `Bearer ${token}`,
-      "content-type": "application/json",
-      "x-correlation-id": crypto.randomUUID(),
-    },
-    body: JSON.stringify(body),
+async function bridgeRequest(path, { token = null, body, method = "POST" } = {}) {
+  const headers = new Headers({
+    "x-correlation-id": crypto.randomUUID(),
   });
+  if (token) headers.set("authorization", `Bearer ${token}`);
+  if (body !== undefined) headers.set("content-type", "application/json");
+  let response;
+  try {
+    const init = { method, headers };
+    if (body !== undefined) init.body = JSON.stringify(body);
+    response = await fetch(`${bridgeUrl()}${path}`, init);
+  } catch {
+    throw new BridgeRequestError(
+      0,
+      "bridge_unavailable",
+      localize(
+        "ORDEM_BRIDGE.Errors.PortalUnavailable",
+        "Não foi possível alcançar o portal. Verifique sua conexão e tente novamente.",
+      ),
+    );
+  }
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(payload.message ?? `Foundry Bridge respondeu ${response.status}.`);
+    throw new BridgeRequestError(
+      response.status,
+      payload.error ?? "bridge_request_failed",
+      payload.message ?? `Foundry Bridge respondeu ${response.status}.`,
+    );
   }
   return payload;
 }
 
+async function saveBridgeUrl(value) {
+  assertGameMaster();
+  let url;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new Error(
+      localize("ORDEM_BRIDGE.Errors.InvalidUrl", "Informe um endereço HTTPS válido."),
+    );
+  }
+  const localDevelopment =
+    url.protocol === "http:" && ["localhost", "127.0.0.1"].includes(url.hostname);
+  if (url.protocol !== "https:" && !localDevelopment) {
+    throw new Error(
+      localize("ORDEM_BRIDGE.Errors.InvalidUrl", "Informe um endereço HTTPS válido."),
+    );
+  }
+  await game.settings.set(MODULE_ID, "bridgeUrl", url.toString().replace(/\/+$/u, ""));
+}
+
+function bridgeUrl() {
+  return String(game.settings.get(MODULE_ID, "bridgeUrl") || DEFAULT_BRIDGE_URL)
+    .replace(/\/+$/u, "");
+}
+
 function connection() {
+  const record = game.settings.get(MODULE_ID, "connectionRecord") ?? {};
   return {
-    worldId: game.settings.get(MODULE_ID, "worldId"),
+    worldId: record.worldId ?? "",
     accessToken: game.settings.get(MODULE_ID, "accessToken"),
+    campaignId: record.campaignId ?? "",
+    campaignName: record.campaignName ?? "",
+    connectorName: record.connectorName ?? "",
+    connectionGeneration: record.generation ?? "",
+    accessTokenGeneration: game.settings.get(MODULE_ID, "accessTokenGeneration"),
+  };
+}
+
+function pairing() {
+  const expiresAt = game.settings.get(MODULE_ID, "pairingExpiresAt");
+  return {
+    pairingId: game.settings.get(MODULE_ID, "pairingId"),
+    deviceCode: game.settings.get(MODULE_ID, "pairingDeviceCode"),
+    userCode: game.settings.get(MODULE_ID, "pairingUserCode"),
+    verificationUrl: game.settings.get(MODULE_ID, "pairingVerificationUrl"),
+    expiresAt,
+    expired: Boolean(expiresAt && Date.parse(expiresAt) <= Date.now()),
+    terminal: game.settings.get(MODULE_ID, "pairingTerminalStatus"),
   };
 }
 
 function publicStatus() {
   const current = connection();
-  const registered = Boolean(current.worldId && current.accessToken);
+  const pending = pairing();
+  const linked = Boolean(current.worldId);
+  const pendingPairing = Boolean(
+    pending.pairingId && pending.deviceCode && pending.userCode,
+  );
+  const connected = linked && !pendingPairing;
+  const lastHeartbeatAt = game.settings.get(MODULE_ID, "lastHeartbeatAt");
+  const lastSyncAt = game.settings.get(MODULE_ID, "lastSyncAt");
+  const lastError = game.settings.get(MODULE_ID, "lastConnectionError");
   return Object.freeze({
-    registered,
+    connected,
+    disconnected: !linked && !pendingPairing,
+    pendingPairing,
+    pairingExpired: pendingPairing && Boolean(pending.expired || pending.terminal),
     worldId: current.worldId || null,
-    activeConnector: registered && isPrimaryGameMaster(),
+    campaignId: current.campaignId || null,
+    campaignName: current.campaignName || null,
+    userCode: pending.userCode || null,
+    verificationUrl: pending.verificationUrl || null,
+    pairingExpiresAt: pending.expiresAt
+      ? formatDateTime(pending.expiresAt)
+      : null,
+    worldTitle: game.world.title,
+    foundryWorldId: game.world.id,
+    isGameMaster: Boolean(game.user?.isGM),
+    activeConnector: connected && isCredentialedGameMaster(),
+    canTakeOver: connected && isPrimaryGameMaster() && !isCredentialedGameMaster(),
+    connectorName: connected ? current.connectorName || primaryGameMaster()?.name : null,
+    lastHeartbeatAt: lastHeartbeatAt ? formatDateTime(lastHeartbeatAt) : null,
+    lastSyncAt: lastSyncAt ? formatDateTime(lastSyncAt) : null,
+    lastSyncCount: game.settings.get(MODULE_ID, "lastSyncCount"),
+    hasConnectionError: Boolean(lastError),
+    lastConnectionError: lastError || null,
   });
 }
 
-function isPrimaryGameMaster() {
-  if (!game.user?.isGM) return false;
-  const activeGameMasters = game.users
+function isCredentialedGameMaster() {
+  return Boolean(
+    game.user?.isGM &&
+      connection().accessToken &&
+      connection().connectionGeneration &&
+      connection().connectionGeneration === connection().accessTokenGeneration &&
+      primaryGameMaster()?.id === game.user.id,
+  );
+}
+
+function primaryGameMaster() {
+  const foundryPrimary = game.users?.activeGM;
+  if (foundryPrimary) return foundryPrimary;
+  return [...(game.users ?? [])]
     .filter((user) => user.active && user.isGM)
-    .sort((left, right) => left.id.localeCompare(right.id));
-  return activeGameMasters[0]?.id === game.user.id;
+    .sort((left, right) => String(left.id).localeCompare(String(right.id)))[0] ?? null;
+}
+
+function isPrimaryGameMaster() {
+  return Boolean(game.user?.isGM && primaryGameMaster()?.id === game.user.id);
 }
 
 function assertGameMaster() {
-  if (!game.user?.isGM) throw new Error("Apenas um mestre pode operar o Foundry Bridge.");
+  if (!game.user?.isGM) {
+    throw new Error(
+      localize(
+        "ORDEM_BRIDGE.Errors.GameMasterOnly",
+        "Apenas um mestre pode operar a conexão deste mundo.",
+      ),
+    );
+  }
 }
 
 function assertPrimaryGameMaster() {
-  assertGameMaster();
   if (!isPrimaryGameMaster()) {
-    throw new Error("Apenas o mestre ativo principal pode registrar este mundo.");
+    throw new Error(
+      localize(
+        "ORDEM_BRIDGE.Errors.PrimaryGmOnly",
+        "Somente o mestre ativo principal pode operar a conexão deste mundo.",
+      ),
+    );
   }
 }
 
@@ -386,6 +929,123 @@ function localize(key, fallback) {
   return translation === key ? fallback : translation;
 }
 
-function logConnectionError(error) {
-  console.warn(`${MODULE_ID} |`, error);
+function formatLocalized(key, data, fallback) {
+  const translation = game.i18n.format(key, data);
+  return translation === key ? fallback : translation;
+}
+
+function formatDateTime(value) {
+  try {
+    return new Intl.DateTimeFormat(game.i18n.lang || "pt-BR", {
+      dateStyle: "short",
+      timeStyle: "short",
+    }).format(new Date(value));
+  } catch {
+    return value;
+  }
+}
+
+function friendlyError(error) {
+  if (error instanceof BridgeRequestError) {
+    if (error.code === "internal_error") {
+      return localize(
+        "ORDEM_BRIDGE.Errors.ServiceUpdate",
+        "O portal não conseguiu concluir esta atualização. Tente novamente.",
+      );
+    }
+    return error.message;
+  }
+  return error instanceof Error
+    ? error.message
+    : localize("ORDEM_BRIDGE.Errors.Unknown", "Não foi possível concluir a operação.");
+}
+
+async function handleOperationalError(error) {
+  if (error?.connectionGeneration) {
+    const current = connection();
+    const obsolete =
+      error.connectionGeneration !== current.connectionGeneration ||
+      error.connectionGeneration !== current.accessTokenGeneration ||
+      error.worldId !== current.worldId;
+    if (obsolete) {
+      console.warn(`${MODULE_ID} | Resposta obsoleta ignorada para a geração anterior.`);
+      return;
+    }
+  }
+  const message = friendlyError(error);
+  if (
+    error instanceof BridgeRequestError &&
+    ["invalid_world_token", "world_revoked"].includes(error.code)
+  ) {
+    stopBridge();
+    await clearLocalCredential(error.connectionGeneration ?? null);
+    await game.settings.set(
+      MODULE_ID,
+      "lastConnectionError",
+      error.code === "world_revoked"
+        ? localize(
+            "ORDEM_BRIDGE.Errors.Revoked",
+            "A conexão deste mundo foi revogada. Inicie um novo pareamento.",
+          )
+        : localize(
+            "ORDEM_BRIDGE.Errors.CredentialReplaced",
+            "A credencial deste navegador foi substituída. Assuma a conexão novamente se necessário.",
+          ),
+    );
+    ui.notifications.error(
+      error.code === "world_revoked"
+        ? localize(
+            "ORDEM_BRIDGE.Errors.Revoked",
+            "A conexão deste mundo foi revogada. Inicie um novo pareamento.",
+          )
+        : localize(
+            "ORDEM_BRIDGE.Errors.CredentialReplaced",
+            "A credencial deste navegador foi substituída. Assuma a conexão novamente se necessário.",
+          ),
+    );
+  } else {
+    await game.settings.set(MODULE_ID, "lastConnectionError", message);
+  }
+  renderConnectionApplication();
+  console.warn(`${MODULE_ID} | ${message}`);
+}
+
+async function renderConnectionApplication() {
+  if (!connectionApplication?.rendered || renderingConnectionApplication) return;
+  renderingConnectionApplication = true;
+  const element = connectionApplication.element;
+  const focused = element?.contains(document.activeElement) ? document.activeElement : null;
+  const focusSelector = focused?.id
+    ? `#${CSS.escape(focused.id)}`
+    : focused?.dataset?.action
+      ? `[data-action="${CSS.escape(focused.dataset.action)}"]`
+      : null;
+  const selection = focused instanceof HTMLInputElement
+    ? { start: focused.selectionStart, end: focused.selectionEnd }
+    : null;
+  const technicalOpen = Boolean(element?.querySelector(".ordem-bridge-technical")?.open);
+  try {
+    await connectionApplication.render();
+    const nextElement = connectionApplication.element;
+    const technical = nextElement?.querySelector(".ordem-bridge-technical");
+    if (technical instanceof HTMLDetailsElement) technical.open = technicalOpen;
+    const nextFocused = focusSelector ? nextElement?.querySelector(focusSelector) : null;
+    if (nextFocused instanceof HTMLElement) {
+      nextFocused.focus({ preventScroll: true });
+      if (selection && nextFocused instanceof HTMLInputElement) {
+        nextFocused.setSelectionRange(selection.start, selection.end);
+      }
+    }
+  } finally {
+    renderingConnectionApplication = false;
+  }
+}
+
+class BridgeRequestError extends Error {
+  constructor(status, code, message) {
+    super(message);
+    this.name = "BridgeRequestError";
+    this.status = status;
+    this.code = code;
+  }
 }

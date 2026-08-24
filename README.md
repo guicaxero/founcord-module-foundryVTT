@@ -28,22 +28,23 @@ Ao entrar no mundo pela primeira vez, o módulo informa que está ativo mas aind
 não conectado. Esse aviso é esperado: ativação e registro seguro são etapas
 separadas.
 
-## Registro do mundo
+## Conectar um mundo
 
-1. Em **Configurações do módulo**, confira a URL do Bridge e o ID da campanha.
-2. Solicite ao administrador um token temporário de registro.
-3. Como mestre, abra o console do navegador e execute:
+1. Entre no mundo como mestre e abra **Configurações → Configurar módulos →
+   Ordem da Última Luz → Gerenciar conexão**.
+2. Selecione **Conectar este mundo**. O módulo exibirá um código temporário com
+   validade de dez minutos.
+3. Abra o portal pelo botão da própria tela e entre com o Discord.
+4. Escolha uma das campanhas que você tem permissão para gerenciar, revise os
+   dados do mundo e autorize.
+5. Volte ao Foundry. A tela detecta a autorização, envia o primeiro heartbeat e
+   sincroniza os personagens automaticamente.
 
-```js
-await game.modules
-  .get("ordem-foundry-bridge")
-  .api.registerWorld("TOKEN_TEMPORARIO")
-```
-
-O token temporário não é salvo e só pode ser utilizado uma vez. O Bridge devolve
-uma credencial aleatória para aquele navegador do mestre, armazenada como
-configuração local e nunca exibida em logs. Para repetir o registro e rotacionar
-a credencial anterior, solicite um novo token de bootstrap.
+Não há token administrativo, ID de campanha ou comando de console. O portal
+aplica o RBAC no servidor: `owner` pode escolher qualquer campanha; mestre ou
+gerente escolhe somente uma campanha em que tenha esse papel; jogador e usuário
+comum não podem autorizar. O código temporário não é uma credencial permanente,
+expira rapidamente e nunca é mostrado depois da conexão.
 
 ## Operação
 
@@ -51,7 +52,8 @@ a credencial anterior, solicite um novo token de bootstrap.
 - offline derivado após 90 segundos sem heartbeat;
 - polling de comandos a cada 5 segundos, com backoff em falhas;
 - sincronização integral dos personagens ao iniciar e após alterações;
-- apenas o primeiro mestre ativo mantém a conexão, evitando duplicidade.
+- o navegador do mestre que concluiu o pareamento mantém a conexão; outro
+  mestre pode iniciar um novo pareamento quando necessário.
 
 O módulo não sincroniza descrições, notas do mestre, inventário ou conteúdo de
 livros. Somente nome, nível, ancestralidade, caminhos, proprietários e recursos
@@ -64,4 +66,5 @@ const bridge = game.modules.get("ordem-foundry-bridge").api
 bridge.status()
 await bridge.syncNow()
 await bridge.disconnect()
+bridge.open()
 ```
