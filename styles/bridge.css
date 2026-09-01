@@ -21,7 +21,8 @@
 }
 
 .ordem-bridge-window button,
-.ordem-bridge-window input {
+.ordem-bridge-window input,
+.ordem-bridge-window select {
   font: inherit;
 }
 
@@ -255,6 +256,7 @@
 
 .ordem-bridge-window button:focus-visible,
 .ordem-bridge-window input:focus-visible,
+.ordem-bridge-window select:focus-visible,
 .ordem-bridge-window summary:focus-visible {
   outline: 2px solid #3e6f83;
   outline-offset: 2px;
@@ -436,6 +438,109 @@
 .ordem-bridge-character-card p,
 .ordem-bridge-danger-zone p { font-size: 0.8rem; }
 
+.ordem-bridge-merchant-card {
+  display: grid;
+  gap: 15px;
+  margin-top: 12px;
+  padding: 16px;
+  border: 1px solid rgba(162, 110, 44, 0.28);
+  border-radius: 10px;
+  background: rgba(241, 224, 191, 0.34);
+}
+
+.ordem-bridge-merchant-heading,
+.ordem-bridge-merchant-controls,
+.ordem-bridge-merchant-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.ordem-bridge-merchant-heading {
+  align-items: flex-start;
+}
+
+.ordem-bridge-readonly-badge {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 9px;
+  border: 1px solid rgba(72, 50, 35, 0.2);
+  border-radius: 999px;
+  color: #4f433b;
+  background: rgba(255, 252, 245, 0.62);
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.ordem-bridge-merchant-form {
+  display: grid;
+  gap: 5px;
+}
+
+.ordem-bridge-merchant-form label {
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.ordem-bridge-merchant-form > p,
+.ordem-bridge-field-message {
+  margin: 0;
+  color: var(--ordem-muted);
+  font-size: 0.76rem;
+}
+
+.ordem-bridge-merchant-controls select {
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  padding: 7px 10px;
+  border: 1px solid var(--ordem-line);
+  border-radius: 8px;
+  color: var(--ordem-ink);
+  background: rgba(255, 253, 247, 0.86);
+}
+
+.ordem-bridge-merchant-controls button,
+.ordem-bridge-merchant-status > button {
+  flex: 0 0 auto;
+}
+
+.ordem-bridge-merchant-status {
+  align-items: flex-end;
+  padding-top: 13px;
+  border-top: 1px solid var(--ordem-line);
+}
+
+.ordem-bridge-merchant-status dl {
+  display: grid;
+  grid-template-columns: minmax(130px, 1.2fr) repeat(2, minmax(105px, 1fr));
+  flex: 1;
+  gap: 10px;
+  margin: 0;
+}
+
+.ordem-bridge-merchant-status dl div {
+  display: grid;
+  gap: 3px;
+}
+
+.ordem-bridge-merchant-status dt {
+  color: var(--ordem-muted);
+  font-size: 0.68rem;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.ordem-bridge-merchant-status dd {
+  margin: 0;
+  color: var(--ordem-ink);
+  overflow-wrap: anywhere;
+  font-weight: 750;
+}
+
 .ordem-bridge-danger-zone {
   margin-top: 12px;
   border: 1px solid rgba(143, 47, 34, 0.18);
@@ -499,10 +604,16 @@
   .ordem-bridge-pairing-heading,
   .ordem-bridge-actions,
   .ordem-bridge-character-card,
+  .ordem-bridge-merchant-heading,
+  .ordem-bridge-merchant-controls,
+  .ordem-bridge-merchant-status,
   .ordem-bridge-danger-zone { align-items: stretch; flex-direction: column; }
   .ordem-bridge-actions button,
   .ordem-bridge-character-card button,
+  .ordem-bridge-merchant-controls button,
+  .ordem-bridge-merchant-status > button,
   .ordem-bridge-danger-zone button { width: 100%; }
+  .ordem-bridge-merchant-status dl { grid-template-columns: 1fr; }
   .ordem-bridge-connector { width: auto; }
 }
 

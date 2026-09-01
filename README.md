@@ -52,6 +52,8 @@ expira rapidamente e nunca é mostrado depois da conexão.
 - offline derivado após 90 segundos sem heartbeat;
 - polling de comandos a cada 5 segundos, com backoff em falhas;
 - sincronização integral dos personagens ao iniciar e após alterações;
+- catálogo somente leitura do ator escolhido como Mercador, atualizado ao
+  iniciar e depois de alterações no ator ou em seus itens;
 - captura somente de mensagens públicas durante sessões iniciadas pelo portal;
 - fila local de até 500 mensagens públicas para reenvio após indisponibilidade;
 - o navegador do mestre que concluiu o pareamento mantém a conexão; outro
@@ -60,6 +62,20 @@ expira rapidamente e nunca é mostrado depois da conexão.
 O módulo não sincroniza descrições, notas do mestre, inventário ou conteúdo de
 livros. Somente nome, nível, ancestralidade, caminhos, proprietários e recursos
 mecânicos mínimos são enviados ao portal.
+
+### Configurar o Mercador
+
+Com o mundo conectado, abra **Gerenciar conexão**, localize a seção
+**Mercador**, escolha o ator que representa o estoque e selecione **Salvar
+Mercador**. O primeiro catálogo é enviado imediatamente. Alterações futuras no
+ator e em seus itens agendam novas sincronizações; o mestre também pode usar
+**Sincronizar catálogo**.
+
+O catálogo é uma projeção pública somente leitura: envia no máximo 500 itens
+com nome, descrição sanitizada, categoria, preço, quantidade e, quando já for
+pública, uma URL HTTPS de imagem. Caminhos locais do Foundry, flags, notas de
+mestre e demais dados do ator não são enviados. Esta versão não realiza compra,
+transferência de itens ou desconto de moedas.
 
 Durante uma sessão registrada no portal, o mestre conector envia uma projeção
 em texto simples das mensagens públicas do chat. Sussurros, rolagens cegas,
@@ -72,6 +88,7 @@ descarta os lotes recebidos e o módulo remove esses itens da fila local.
 const bridge = game.modules.get("ordem-foundry-bridge").api
 bridge.status()
 await bridge.syncNow()
+await bridge.syncMerchant()
 await bridge.disconnect()
 bridge.open()
 ```
