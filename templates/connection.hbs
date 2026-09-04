@@ -145,6 +145,57 @@
           <i class="fa-solid fa-rotate" aria-hidden="true"></i>{{#if syncing}}{{localize "ORDEM_BRIDGE.Actions.Syncing"}}{{else}}{{localize "ORDEM_BRIDGE.Actions.SyncNow"}}{{/if}}
         </button>
       </div>
+      <section class="ordem-bridge-merchant-card" aria-labelledby="ordem-merchant-title">
+        <div class="ordem-bridge-merchant-heading">
+          <div>
+            <span class="ordem-bridge-eyebrow">{{localize "ORDEM_BRIDGE.Merchant.Eyebrow"}}</span>
+            <h3 id="ordem-merchant-title">{{localize "ORDEM_BRIDGE.Merchant.Title"}}</h3>
+            <p id="ordem-merchant-description">{{localize "ORDEM_BRIDGE.Merchant.Description"}}</p>
+          </div>
+          <span class="ordem-bridge-readonly-badge"><i class="fa-regular fa-eye" aria-hidden="true"></i>{{localize "ORDEM_BRIDGE.Merchant.ReadOnly"}}</span>
+        </div>
+
+        {{#if merchantMissing}}
+          <div class="ordem-bridge-feedback is-warning" role="alert">
+            <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+            <span>{{localize "ORDEM_BRIDGE.Merchant.MissingActor"}}</span>
+          </div>
+        {{/if}}
+
+        <div class="ordem-bridge-merchant-form">
+          <label for="ordem-merchant-actor">{{localize "ORDEM_BRIDGE.Merchant.ActorLabel"}}</label>
+          <p id="ordem-merchant-actor-hint">{{localize "ORDEM_BRIDGE.Merchant.ActorHint"}}</p>
+          <div class="ordem-bridge-merchant-controls">
+            <select id="ordem-merchant-actor" name="merchantActorId" aria-describedby="ordem-merchant-actor-hint" {{#unless activeConnector}}disabled{{/unless}} {{#if busy}}disabled{{/if}}>
+              <option value="">{{localize "ORDEM_BRIDGE.Merchant.NoActor"}}</option>
+              {{#each merchantActors}}
+                <option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>
+              {{/each}}
+            </select>
+            <button type="button" data-action="saveMerchant" {{#unless activeConnector}}disabled{{/unless}} {{#if busy}}disabled{{/if}}>
+              <i class="fa-regular fa-floppy-disk" aria-hidden="true"></i>
+              {{#if savingMerchant}}{{localize "ORDEM_BRIDGE.Actions.Saving"}}{{else}}{{localize "ORDEM_BRIDGE.Actions.SaveMerchant"}}{{/if}}
+            </button>
+          </div>
+          {{#unless hasMerchantActors}}
+            <p class="ordem-bridge-field-message">{{localize "ORDEM_BRIDGE.Merchant.NoActorsAvailable"}}</p>
+          {{/unless}}
+        </div>
+
+        {{#if merchantConfigured}}
+          <div class="ordem-bridge-merchant-status">
+            <dl>
+              <div><dt>{{localize "ORDEM_BRIDGE.Merchant.SelectedActor"}}</dt><dd>{{merchantActorName}}</dd></div>
+              <div><dt>{{localize "ORDEM_BRIDGE.Merchant.LastSync"}}</dt><dd>{{#if lastMerchantSyncAt}}{{lastMerchantSyncAt}}{{else}}{{localize "ORDEM_BRIDGE.Common.Waiting"}}{{/if}}</dd></div>
+              <div><dt>{{localize "ORDEM_BRIDGE.Merchant.ItemsSent"}}</dt><dd>{{lastMerchantSyncCount}}</dd></div>
+            </dl>
+            <button type="button" data-action="syncMerchant" {{#unless activeConnector}}disabled{{/unless}} {{#if busy}}disabled{{/if}}>
+              <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+              {{#if syncingMerchant}}{{localize "ORDEM_BRIDGE.Actions.Syncing"}}{{else}}{{localize "ORDEM_BRIDGE.Actions.SyncMerchant"}}{{/if}}
+            </button>
+          </div>
+        {{/if}}
+      </section>
       <div class="ordem-bridge-danger-zone">
         <div><strong>{{localize "ORDEM_BRIDGE.Disconnect.Title"}}</strong><p>{{localize "ORDEM_BRIDGE.Disconnect.Hint"}}</p></div>
         <button class="is-danger" type="button" data-action="disconnect" {{#unless activeConnector}}disabled{{/unless}} {{#if busy}}disabled{{/if}}>

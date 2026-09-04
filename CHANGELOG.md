@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.0 — 2026-08-31
+
+- Permite ao mestre conector escolher explicitamente um ator como Mercador.
+- Sincroniza um catálogo sanitizado e somente leitura com nome, descrição,
+  categoria, preço e quantidade dos itens.
+- Atualiza o catálogo ao alterar o ator ou seus itens e oferece sincronização
+  manual com estado visível na tela de conexão.
+- Mantém caminhos e imagens locais fora da projeção pública; somente imagens
+  HTTPS podem ser encaminhadas.
+
 ## 0.3.0 — 2026-08-24
 
 - Captura mensagens públicas do chat durante sessões iniciadas pelo portal.

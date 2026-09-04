@@ -1,4 +1,4 @@
-/* global ChatMessage, Hooks, game, foundry, ui */
+/* global CONFIG, ChatMessage, Hooks, game, foundry, ui */
 
 const MODULE_ID = "ordem-foundry-bridge";
 const DEFAULT_BRIDGE_URL =
@@ -7,16 +7,27 @@ const HEARTBEAT_INTERVAL = 30_000;
 const DEFAULT_POLL_INTERVAL = 5_000;
 const CHAT_BATCH_SIZE = 25;
 const MAX_PENDING_CHAT_EVENTS = 500;
+const PRESENTATION_ONLY_SETTINGS = new Set([
+  "lastHeartbeatAt",
+  "lastSyncAt",
+  "lastSyncCount",
+  "merchantActorId",
+  "lastMerchantSyncAt",
+  "lastMerchantSyncCount",
+  "lastConnectionError",
+]);
 
 let heartbeatTimer = null;
 let commandPollTimer = null;
 let syncTimer = null;
+let merchantSyncTimer = null;
 let pairingPollTimer = null;
 let pollingCommands = false;
 let commandPollFailures = 0;
 let connectionApplication = null;
 let heartbeatInFlight = null;
 let syncInFlight = null;
+let merchantSyncInFlight = null;
 let renderingConnectionApplication = false;
 let chatFlushTimer = null;
 let chatFlushInFlight = null;
@@ -44,6 +55,8 @@ class BridgeConnectionApplication extends HandlebarsApplicationMixin(
       openPortal: this.openPortal,
       cancelPairing: this.cancelPairing,
       syncNow: this.syncNow,
+      saveMerchant: this.saveMerchant,
+      syncMerchant: this.syncMerchant,
       disconnect: this.disconnect,
       saveBridgeUrl: this.saveBridgeUrl,
       retry: this.retry,
@@ -68,16 +81,19 @@ class BridgeConnectionApplication extends HandlebarsApplicationMixin(
       connecting: this.busyAction === "connect",
       cancelling: this.busyAction === "cancel",
       syncing: this.busyAction === "sync",
+      savingMerchant: this.busyAction === "merchant-save",
+      syncingMerchant: this.busyAction === "merchant-sync",
       disconnecting: this.busyAction === "disconnect",
       savingUrl: this.busyAction === "save-url",
       feedback: this.feedback,
       feedbackIsError: this.feedback?.type === "error",
       bridgeUrlLocked: publicStatus().connected || publicStatus().pendingPairing,
-      moduleVersion: game.modules.get(MODULE_ID)?.version ?? "0.3.0",
+      moduleVersion: game.modules.get(MODULE_ID)?.version ?? "0.4.0",
       foundryVersion: game.version,
       systemVersion: game.system.version,
       systemTitle: game.system.title,
       bridgeUrl: bridgeUrl(),
+      merchantActors: merchantActorOptions(),
     };
   }
 
@@ -158,6 +174,35 @@ class BridgeConnectionApplication extends HandlebarsApplicationMixin(
       localize(
         "ORDEM_BRIDGE.Feedback.SyncComplete",
         "Personagens sincronizados com o portal.",
+      ),
+    );
+  }
+
+  static async saveMerchant() {
+    const select = this.element.querySelector("[name='merchantActorId']");
+    const actorId = select instanceof HTMLSelectElement ? select.value : "";
+    await this.runOperation(
+      "merchant-save",
+      () => saveMerchantActor(actorId),
+      actorId
+        ? localize(
+            "ORDEM_BRIDGE.Feedback.MerchantSaved",
+            "Mercador selecionado. O primeiro catálogo será sincronizado agora.",
+          )
+        : localize(
+            "ORDEM_BRIDGE.Feedback.MerchantCleared",
+            "Seleção do Mercador removida.",
+          ),
+    );
+  }
+
+  static async syncMerchant() {
+    await this.runOperation(
+      "merchant-sync",
+      syncMerchantCatalog,
+      localize(
+        "ORDEM_BRIDGE.Feedback.MerchantSyncComplete",
+        "Catálogo do Mercador sincronizado com o portal.",
       ),
     );
   }
@@ -260,8 +305,14 @@ Hooks.on("updateUser", () => {
 });
 
 Hooks.on("updateSetting", (setting) => {
-  if (!String(setting?.key ?? "").startsWith(`${MODULE_ID}.`)) return;
-  if (setting.key === `${MODULE_ID}.pendingChatEvents`) return;
+  const settingKey = String(setting?.key ?? "");
+  if (!settingKey.startsWith(`${MODULE_ID}.`)) return;
+  const localKey = settingKey.slice(MODULE_ID.length + 1);
+  if (localKey === "pendingChatEvents") return;
+  if (PRESENTATION_ONLY_SETTINGS.has(localKey)) {
+    renderConnectionApplication();
+    return;
+  }
   if (isCredentialedGameMaster()) startBridge();
   else stopBridge();
   renderConnectionApplication();
@@ -270,6 +321,16 @@ Hooks.on("updateSetting", (setting) => {
 for (const event of ["createActor", "updateActor", "deleteActor"]) {
   Hooks.on(event, (actor) => {
     if (actor?.type === "character") scheduleCharacterSync();
+    if (actor?.id === merchantActorId()) {
+      if (event !== "deleteActor") scheduleMerchantSync();
+      renderConnectionApplication();
+    }
+  });
+}
+
+for (const event of ["createItem", "updateItem", "deleteItem"]) {
+  Hooks.on(event, (item) => {
+    if (item?.parent?.id === merchantActorId()) scheduleMerchantSync();
   });
 }
 
@@ -308,6 +369,9 @@ function registerSettings() {
   registerSetting("lastHeartbeatAt", { scope: "world", default: "" });
   registerSetting("lastSyncAt", { scope: "world", default: "" });
   registerSetting("lastSyncCount", { scope: "world", default: 0, type: Number });
+  registerSetting("merchantActorId", { scope: "world", default: "" });
+  registerSetting("lastMerchantSyncAt", { scope: "world", default: "" });
+  registerSetting("lastMerchantSyncCount", { scope: "world", default: 0, type: Number });
   registerSetting("pendingChatEvents", { scope: "world", default: [], type: Object });
   registerSetting("lastConnectionError", { scope: "client", default: "" });
 }
@@ -330,6 +394,7 @@ function exposeApi() {
     startPairing,
     disconnect,
     syncNow: syncCharacters,
+    syncMerchant: syncMerchantCatalog,
     status: publicStatus,
   });
 }
@@ -360,7 +425,7 @@ async function startPairing() {
       systemId: game.system.id,
       foundryVersion: game.version,
       systemVersion: game.system.version,
-      moduleVersion: moduleEntry?.version ?? "0.3.0",
+      moduleVersion: moduleEntry?.version ?? "0.4.0",
     },
   });
   await Promise.all([
@@ -537,6 +602,7 @@ function startBridge() {
   }
   if (!commandPollTimer) scheduleCommandPoll(0);
   scheduleCharacterSync(500);
+  scheduleMerchantSync(750);
   scheduleChatFlush(500);
 }
 
@@ -544,10 +610,12 @@ function stopBridge() {
   if (heartbeatTimer) globalThis.clearInterval(heartbeatTimer);
   if (commandPollTimer) globalThis.clearTimeout(commandPollTimer);
   if (syncTimer) globalThis.clearTimeout(syncTimer);
+  if (merchantSyncTimer) globalThis.clearTimeout(merchantSyncTimer);
   if (chatFlushTimer) globalThis.clearTimeout(chatFlushTimer);
   heartbeatTimer = null;
   commandPollTimer = null;
   syncTimer = null;
+  merchantSyncTimer = null;
   chatFlushTimer = null;
   pollingCommands = false;
 }
@@ -612,6 +680,181 @@ async function performCharacterSync() {
   ]);
   renderConnectionApplication();
   return { ...response, synchronizedCharacters: characters.length };
+}
+
+function scheduleMerchantSync(delay = 2_000) {
+  if (!isCredentialedGameMaster() || !merchantActorId()) return;
+  if (merchantSyncTimer) globalThis.clearTimeout(merchantSyncTimer);
+  merchantSyncTimer = globalThis.setTimeout(() => {
+    merchantSyncTimer = null;
+    void syncMerchantCatalog().catch(handleOperationalError);
+  }, delay);
+}
+
+async function syncMerchantCatalog() {
+  if (merchantSyncInFlight) return merchantSyncInFlight;
+  merchantSyncInFlight = performMerchantSync().finally(() => {
+    merchantSyncInFlight = null;
+  });
+  return merchantSyncInFlight;
+}
+
+async function performMerchantSync() {
+  assertGameMaster();
+  if (!isCredentialedGameMaster()) {
+    throw new Error(
+      localize(
+        "ORDEM_BRIDGE.Errors.PrimaryGmOnly",
+        "Somente o mestre conector ativo pode sincronizar este mundo.",
+      ),
+    );
+  }
+  const actorId = merchantActorId();
+  const actor = actorId ? game.actors.get(actorId) : null;
+  if (!actor) {
+    throw new Error(
+      actorId
+        ? localize(
+            "ORDEM_BRIDGE.Errors.MerchantMissing",
+            "O ator escolhido como Mercador não existe mais. Selecione outro ator.",
+          )
+        : localize(
+            "ORDEM_BRIDGE.Errors.MerchantRequired",
+            "Selecione um ator antes de sincronizar o Mercador.",
+          ),
+    );
+  }
+
+  const capturedAt = new Date().toISOString();
+  const items = [...(actor.items ?? [])]
+    .slice(0, 500)
+    .map(merchantItemProjection);
+  const response = await authenticatedRequest("/merchant/sync", {
+    syncId: crypto.randomUUID(),
+    capturedAt,
+    catalog: {
+      merchantActorId: String(actor.id).slice(0, 128),
+      merchantName: String(actor.name ?? "").trim().slice(0, 160) || "Mercador",
+      sourceUpdatedAt: documentUpdatedAt(actor),
+      items,
+    },
+  });
+  await Promise.all([
+    game.settings.set(MODULE_ID, "lastMerchantSyncAt", capturedAt),
+    game.settings.set(MODULE_ID, "lastMerchantSyncCount", items.length),
+    game.settings.set(MODULE_ID, "lastConnectionError", ""),
+  ]);
+  renderConnectionApplication();
+  return { ...response, synchronizedMerchantItems: items.length };
+}
+
+async function saveMerchantActor(actorId) {
+  assertGameMaster();
+  assertPrimaryGameMaster();
+  const normalized = String(actorId ?? "").trim();
+  if (normalized && !game.actors.get(normalized)) {
+    throw new Error(
+      localize(
+        "ORDEM_BRIDGE.Errors.MerchantMissing",
+        "O ator escolhido como Mercador não existe mais. Selecione outro ator.",
+      ),
+    );
+  }
+  await Promise.all([
+    game.settings.set(MODULE_ID, "merchantActorId", normalized),
+    game.settings.set(MODULE_ID, "lastMerchantSyncAt", ""),
+    game.settings.set(MODULE_ID, "lastMerchantSyncCount", 0),
+  ]);
+  if (normalized && isCredentialedGameMaster()) await syncMerchantCatalog();
+}
+
+function merchantActorOptions() {
+  const selectedId = merchantActorId();
+  return [...(game.actors ?? [])]
+    .map((actor) => ({
+      id: actor.id,
+      name: String(actor.name ?? "").trim() || "Ator sem nome",
+      selected: actor.id === selectedId,
+    }))
+    .sort((left, right) => String(left.name).localeCompare(String(right.name), game.i18n.lang));
+}
+
+function merchantActorId() {
+  return String(game.settings.get(MODULE_ID, "merchantActorId") ?? "").trim();
+}
+
+function merchantItemProjection(item) {
+  return {
+    itemId: String(item.id).slice(0, 128),
+    name: String(item.name ?? "").trim().slice(0, 160) || "Item sem nome",
+    description: sanitizedPlainText(item.system?.description, 4_000),
+    category: merchantItemCategory(item),
+    imageUrl: publicHttpsUrl(item.img),
+    price: nullableLongText(item.system?.value, 64),
+    quantity: nullableQuantity(item.system?.quantity),
+    sourceUpdatedAt: documentUpdatedAt(item),
+  };
+}
+
+function merchantItemCategory(item) {
+  const labelKey = CONFIG.Item?.typeLabels?.[item.type];
+  return nullableLongText(
+    labelKey ? game.i18n.localize(labelKey) : String(item.type ?? ""),
+    80,
+  );
+}
+
+function nullableQuantity(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const quantity = Number(value);
+  return Number.isFinite(quantity)
+    ? Math.min(1_000_000, Math.max(0, Math.trunc(quantity)))
+    : null;
+}
+
+function publicHttpsUrl(value) {
+  if (typeof value !== "string" || !value.trim()) return null;
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === "https:" ? url.toString().slice(0, 2_048) : null;
+  } catch {
+    return null;
+  }
+}
+
+function documentUpdatedAt(document) {
+  const timestamp = Number(
+    document?._stats?.modifiedTime ?? document?._stats?.createdTime ?? Date.now(),
+  );
+  return new Date(Number.isFinite(timestamp) ? timestamp : Date.now()).toISOString();
+}
+
+function sanitizedPlainText(value, maxLength) {
+  const container = document.createElement("div");
+  container.innerHTML = String(value ?? "");
+  for (const element of container.querySelectorAll(
+    "script,style,template,noscript,iframe,object,embed,.secret,.gm-only,[data-secret],[data-gm-only],[data-visibility='gm'],[data-visibility='owner']",
+  )) {
+    element.remove();
+  }
+  for (const lineBreak of container.querySelectorAll("br")) lineBreak.replaceWith("\n");
+  for (const block of container.querySelectorAll("p,div,li,section,article,header,footer")) {
+    block.append("\n");
+  }
+  const text = String(container.textContent ?? "")
+    .replace(/\u00a0/gu, " ")
+    .replace(/[ \t]+/gu, " ")
+    .replace(/ *\n */gu, "\n")
+    .replace(/\n{3,}/gu, "\n\n")
+    .trim();
+  return text ? text.slice(0, maxLength) : null;
+}
+
+function nullableLongText(value, maxLength) {
+  const text = typeof value === "string" || typeof value === "number"
+    ? String(value).trim()
+    : "";
+  return text ? text.slice(0, maxLength) : null;
 }
 
 function isPublicChatMessage(message) {
@@ -999,6 +1242,11 @@ function publicStatus() {
   const lastHeartbeatAt = game.settings.get(MODULE_ID, "lastHeartbeatAt");
   const lastSyncAt = game.settings.get(MODULE_ID, "lastSyncAt");
   const lastError = game.settings.get(MODULE_ID, "lastConnectionError");
+  const selectedMerchantActorId = merchantActorId();
+  const selectedMerchantActor = selectedMerchantActorId
+    ? game.actors.get(selectedMerchantActorId)
+    : null;
+  const lastMerchantSyncAt = game.settings.get(MODULE_ID, "lastMerchantSyncAt");
   return Object.freeze({
     connected,
     disconnected: !linked && !pendingPairing,
@@ -1021,6 +1269,13 @@ function publicStatus() {
     lastHeartbeatAt: lastHeartbeatAt ? formatDateTime(lastHeartbeatAt) : null,
     lastSyncAt: lastSyncAt ? formatDateTime(lastSyncAt) : null,
     lastSyncCount: game.settings.get(MODULE_ID, "lastSyncCount"),
+    merchantActorId: selectedMerchantActorId || null,
+    merchantActorName: selectedMerchantActor?.name ?? null,
+    merchantConfigured: Boolean(selectedMerchantActor),
+    merchantMissing: Boolean(selectedMerchantActorId && !selectedMerchantActor),
+    hasMerchantActors: (game.actors?.size ?? 0) > 0,
+    lastMerchantSyncAt: lastMerchantSyncAt ? formatDateTime(lastMerchantSyncAt) : null,
+    lastMerchantSyncCount: game.settings.get(MODULE_ID, "lastMerchantSyncCount"),
     hasConnectionError: Boolean(lastError),
     lastConnectionError: lastError || null,
   });
