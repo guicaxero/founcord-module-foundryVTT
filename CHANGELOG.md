@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.0 — 2026-09-11
+
+- Recebe pedidos assistidos do Mercador pela fila idempotente de comandos.
+- Revalida Mercador, personagem, item, preço e estoque no mundo antes de avisar.
+- Envia uma mensagem privada e sanitizada a todos os mestres, deixando explícito
+  que nenhuma moeda, item ou quantidade foi alterada automaticamente.
+- Retorna o resultado ao portal para acompanhamento e decisão humana.
+
 ## 0.4.0 — 2026-08-31
 
 - Permite ao mestre conector escolher explicitamente um ator como Mercador.
