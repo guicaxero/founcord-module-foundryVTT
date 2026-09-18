@@ -88,7 +88,7 @@ class BridgeConnectionApplication extends HandlebarsApplicationMixin(
       feedback: this.feedback,
       feedbackIsError: this.feedback?.type === "error",
       bridgeUrlLocked: publicStatus().connected || publicStatus().pendingPairing,
-      moduleVersion: game.modules.get(MODULE_ID)?.version ?? "0.4.0",
+      moduleVersion: game.modules.get(MODULE_ID)?.version ?? "0.5.0",
       foundryVersion: game.version,
       systemVersion: game.system.version,
       systemTitle: game.system.title,
@@ -425,7 +425,7 @@ async function startPairing() {
       systemId: game.system.id,
       foundryVersion: game.version,
       systemVersion: game.system.version,
-      moduleVersion: moduleEntry?.version ?? "0.4.0",
+      moduleVersion: moduleEntry?.version ?? "0.5.0",
     },
   });
   await Promise.all([
@@ -1072,7 +1072,104 @@ async function executeCommand(command) {
     });
     return { messageId: message.id };
   }
+  if (command.type === "merchant.purchase.request") {
+    return createMerchantPurchaseNotification(command.payload);
+  }
   throw new Error(`Tipo de comando não suportado: ${String(command.type)}`);
+}
+
+async function createMerchantPurchaseNotification(payload) {
+  const merchant = game.actors.get(payload.merchantActorId);
+  if (!merchant || merchant.id !== merchantActorId()) {
+    throw new Error(
+      localize(
+        "ORDEM_BRIDGE.Errors.PurchaseMerchantChanged",
+        "O Mercador configurado mudou. Atualize o catálogo antes de reenviar o pedido.",
+      ),
+    );
+  }
+  const buyer = game.actors.get(payload.buyer.actorId);
+  if (!buyer || buyer.type !== "character") {
+    throw new Error(
+      localize(
+        "ORDEM_BRIDGE.Errors.PurchaseBuyerMissing",
+        "O personagem vinculado ao pedido não está disponível neste mundo.",
+      ),
+    );
+  }
+  const item = merchant.items?.get(payload.item.itemId);
+  if (!item) {
+    throw new Error(
+      localize(
+        "ORDEM_BRIDGE.Errors.PurchaseItemMissing",
+        "O item solicitado não está mais no estoque do Mercador.",
+      ),
+    );
+  }
+  const observedPrice = nullableLongText(item.system?.value, 64);
+  const observedQuantity = nullableQuantity(item.system?.quantity);
+  if (!observedPrice || observedPrice !== payload.item.price) {
+    throw new Error(
+      localize(
+        "ORDEM_BRIDGE.Errors.PurchasePriceChanged",
+        "O preço do item mudou. Sincronize o catálogo e peça ao jogador para revisar o pedido.",
+      ),
+    );
+  }
+  if (observedQuantity === null || observedQuantity < payload.item.quantity) {
+    throw new Error(
+      localize(
+        "ORDEM_BRIDGE.Errors.PurchaseStockChanged",
+        "O estoque atual não atende à quantidade solicitada.",
+      ),
+    );
+  }
+  const gmUserIds = [...game.users]
+    .filter((user) => user.isGM)
+    .map((user) => user.id);
+  if (gmUserIds.length === 0) {
+    throw new Error(
+      localize(
+        "ORDEM_BRIDGE.Errors.PurchaseNoGm",
+        "Nenhum usuário mestre está disponível para receber a solicitação.",
+      ),
+    );
+  }
+
+  const content = merchantPurchaseMessage(payload, observedPrice, observedQuantity);
+  const message = await ChatMessage.create({
+    content,
+    speaker: ChatMessage.getSpeaker({ actor: merchant }),
+    whisper: gmUserIds,
+  });
+  return {
+    messageId: message.id,
+    observedPrice,
+    observedQuantity,
+    notifiedGameMasters: gmUserIds.length,
+  };
+}
+
+function merchantPurchaseMessage(payload, observedPrice, observedQuantity) {
+  const escape = (value) => foundry.utils.escapeHTML(String(value ?? ""));
+  const note = payload.note
+    ? `<div class="ordem-purchase-note"><strong>${escape(localize("ORDEM_BRIDGE.Purchase.Note", "Observação do jogador"))}</strong><p>${escape(payload.note).replaceAll("\n", "<br>")}</p></div>`
+    : "";
+  return `<section class="ordem-purchase-request">
+    <header>
+      <span>${escape(localize("ORDEM_BRIDGE.Purchase.State", "Precisa de ação"))}</span>
+      <h2>${escape(localize("ORDEM_BRIDGE.Purchase.Title", "Solicitação de compra"))}</h2>
+    </header>
+    <p>${escape(payload.buyer.displayName)} ${escape(localize("ORDEM_BRIDGE.Purchase.RequestedFor", "solicitou para"))} <strong>${escape(payload.buyer.actorName)}</strong>.</p>
+    <dl>
+      <div><dt>${escape(localize("ORDEM_BRIDGE.Purchase.Item", "Item"))}</dt><dd>${escape(payload.item.name)}</dd></div>
+      <div><dt>${escape(localize("ORDEM_BRIDGE.Purchase.Quantity", "Quantidade"))}</dt><dd>${escape(payload.item.quantity)}</dd></div>
+      <div><dt>${escape(localize("ORDEM_BRIDGE.Purchase.Price", "Preço registrado"))}</dt><dd>${escape(observedPrice)}</dd></div>
+      <div><dt>${escape(localize("ORDEM_BRIDGE.Purchase.Stock", "Estoque observado"))}</dt><dd>${escape(observedQuantity)}</dd></div>
+    </dl>
+    ${note}
+    <p class="ordem-purchase-warning"><strong>${escape(localize("ORDEM_BRIDGE.Purchase.NoMutationTitle", "Nenhuma alteração automática"))}</strong><br>${escape(localize("ORDEM_BRIDGE.Purchase.NoMutation", "Moedas, itens e estoque permanecem como estavam. Faça o acerto no Foundry e registre a decisão no portal."))}</p>
+  </section>`;
 }
 
 function characterProjection(actor) {

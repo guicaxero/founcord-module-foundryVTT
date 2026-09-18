@@ -54,6 +54,8 @@ expira rapidamente e nunca é mostrado depois da conexão.
 - sincronização integral dos personagens ao iniciar e após alterações;
 - catálogo somente leitura do ator escolhido como Mercador, atualizado ao
   iniciar e depois de alterações no ator ou em seus itens;
+- pedidos assistidos do portal revalidados no mundo e notificados somente aos
+  mestres, sem movimentação automática de moedas, estoque ou inventário;
 - captura somente de mensagens públicas durante sessões iniciadas pelo portal;
 - fila local de até 500 mensagens públicas para reenvio após indisponibilidade;
 - o navegador do mestre que concluiu o pareamento mantém a conexão; outro
@@ -74,8 +76,12 @@ ator e em seus itens agendam novas sincronizações; o mestre também pode usar
 O catálogo é uma projeção pública somente leitura: envia no máximo 500 itens
 com nome, descrição sanitizada, categoria, preço, quantidade e, quando já for
 pública, uma URL HTTPS de imagem. Caminhos locais do Foundry, flags, notas de
-mestre e demais dados do ator não são enviados. Esta versão não realiza compra,
-transferência de itens ou desconto de moedas.
+mestre e demais dados do ator não são enviados.
+
+Pedidos feitos no portal aparecem como sussurros para os mestres depois que o
+módulo revalida personagem, item, preço e estoque. Eles continuam sendo pedidos:
+o mestre realiza o acerto no Foundry e registra a decisão no portal. Esta versão
+não realiza transferência de itens ou desconto de moedas.
 
 Durante uma sessão registrada no portal, o mestre conector envia uma projeção
 em texto simples das mensagens públicas do chat. Sussurros, rolagens cegas,
