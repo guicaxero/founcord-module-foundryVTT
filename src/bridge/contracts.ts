@@ -75,6 +75,8 @@ export type CharacterProjection = Readonly<{
     insanity: number;
     corruption: number;
   }>;
+  /** Saldo em `system.wealth`; aceito pelo portal a partir do contrato com moedas. */
+  wealth: CoinPurse;
   sourceUpdatedAt: string;
 }>;
 

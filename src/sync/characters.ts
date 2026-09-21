@@ -1,5 +1,5 @@
 import { authenticatedRequest } from "../bridge/client";
-import type { CharacterProjection, SyncResponse } from "../bridge/contracts";
+import type { CharacterProjection, CoinPurse, SyncResponse } from "../bridge/contracts";
 import { handleOperationalError } from "../connection/operational-errors";
 import { assertCredentialedGameMaster, isCredentialedGameMaster } from "../gm";
 import { nullableText, safeInteger } from "../sanitize";
@@ -52,7 +52,7 @@ async function performCharacterSync(): Promise<CharacterSyncResult> {
   return { ...response, synchronizedCharacters: characters.length };
 }
 
-/** Projeção sanitizada: somente identidade, nível, caminhos e recursos mecânicos mínimos. */
+/** Projeção sanitizada: identidade, nível, caminhos, recursos mecânicos mínimos e moedas. */
 export function characterProjection(actor: FoundryActor): CharacterProjection {
   const system = actor.system ?? {};
   const characteristics = system.characteristics ?? {};
@@ -76,9 +76,20 @@ export function characterProjection(actor: FoundryActor): CharacterProjection {
       insanity: safeInteger(characteristicValue(characteristics.insanity)),
       corruption: safeInteger(characteristicValue(characteristics.corruption)),
     },
+    wealth: coinPurse(system.wealth),
     sourceUpdatedAt: new Date(
       Number.isFinite(modifiedTime) ? modifiedTime : Date.now(),
     ).toISOString(),
+  };
+}
+
+/** As quatro moedas do sistema (`gc`, `ss`, `cp`, `bits`); ausentes ou inválidas viram zero. */
+export function coinPurse(wealth: DemonLordCoins | null | undefined): CoinPurse {
+  return {
+    gc: safeInteger(wealth?.gc),
+    ss: safeInteger(wealth?.ss),
+    cp: safeInteger(wealth?.cp),
+    bits: safeInteger(wealth?.bits),
   };
 }
 
