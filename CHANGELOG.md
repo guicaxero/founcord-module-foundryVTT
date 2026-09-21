@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.0 — não publicada
+
+- Reescreve o módulo em TypeScript estrito, organizado em módulos por
+  responsabilidade, com testes automatizados e build por Bun.
+- Reduz requisições com o mestre ocioso: o heartbeat segue a cadência informada
+  pelo Bridge e o polling de comandos passa a ser adaptativo (5 s a 30 s).
+- Deixa de reiniciar sincronizações completas a cada atualização de usuário ou
+  configuração enquanto a conexão já está ativa.
+
 ## 0.5.0 — 2026-09-11
 
 - Recebe pedidos assistidos do Mercador pela fila idempotente de comandos.

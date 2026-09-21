@@ -21,8 +21,17 @@ em `Data/modules/ordem-foundry-bridge/`.
 
 ### Instalação de desenvolvimento
 
-Copie a pasta `ordem-foundry-bridge` para `Data/modules/` da instalação do
-Foundry e ative o módulo no mundo da campanha.
+O código-fonte é TypeScript em `src/` e precisa ser compilado com
+[Bun](https://bun.sh):
+
+```bash
+bun install
+bun run build
+```
+
+O build gera `dist/ordem-foundry-bridge/`. Copie ou crie um link simbólico dessa
+pasta em `Data/modules/ordem-foundry-bridge` e ative o módulo no mundo da
+campanha. Antes de abrir um Pull Request, execute `bun run check`.
 
 Ao entrar no mundo pela primeira vez, o módulo informa que está ativo mas ainda
 não conectado. Esse aviso é esperado: ativação e registro seguro são etapas
@@ -48,9 +57,12 @@ expira rapidamente e nunca é mostrado depois da conexão.
 
 ## Operação
 
-- heartbeat a cada 30 segundos;
-- offline derivado após 90 segundos sem heartbeat;
-- polling de comandos a cada 5 segundos, com backoff em falhas;
+- a conexão existe somente enquanto o mestre conector está no mundo; sem ele o
+  mundo aparece offline no portal e nenhuma requisição é feita;
+- heartbeat na cadência definida pelo Bridge (60 segundos), com offline
+  derivado após 150 segundos sem heartbeat;
+- polling de comandos adaptativo: 5 segundos após receber comandos, dobrando a
+  cada ciclo vazio até 30 segundos, com backoff em falhas;
 - sincronização integral dos personagens ao iniciar e após alterações;
 - catálogo somente leitura do ator escolhido como Mercador, atualizado ao
   iniciar e depois de alterações no ator ou em seus itens;

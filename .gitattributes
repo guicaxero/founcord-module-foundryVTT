@@ -1,0 +1,5 @@
+# Fim de linha LF em todas as plataformas.
+* text=auto eol=lf
+*.zip binary
+*.png binary
+*.webp binary
