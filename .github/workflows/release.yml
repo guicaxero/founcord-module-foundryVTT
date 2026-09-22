@@ -15,23 +15,30 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Configure Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
       - name: Validate tag and manifest
         shell: bash
         run: |
-          version="$(node -p "require('./module.json').version")"
+          version="$(bun -e "console.log(require('./module.json').version)")"
           if [ "v${version}" != "${GITHUB_REF_NAME}" ]; then
             echo "Tag ${GITHUB_REF_NAME} does not match module version ${version}."
             exit 1
           fi
-          node -e "JSON.parse(require('fs').readFileSync('module.json', 'utf8'))"
+
+      - name: Install locked dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck, lint, test and build
+        run: bun run check
 
       - name: Package module
         shell: bash
         run: |
-          mkdir -p dist/package
-          cp module.json README.md CHANGELOG.md dist/package/
-          cp -R lang scripts styles templates dist/package/
-          cd dist/package
+          cd dist/ordem-foundry-bridge
           zip -r ../ordem-foundry-bridge.zip .
           cd ../..
           cp module.json dist/module.json

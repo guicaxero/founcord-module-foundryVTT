@@ -36,6 +36,19 @@ permissões ou comportamento percebido, o pipeline é obrigatório.
 - Nenhum secret, token operacional ou conteúdo protegido de livros pode fazer
   parte do artefato publicado.
 
+## Código e build
+
+- Todo o código é TypeScript em `src/`, organizado por responsabilidade
+  (`bridge/`, `connection/`, `sync/`, `capture/`, `commands/`, `ui/`).
+- `src/types/foundry.d.ts` declara somente o subconjunto da API do Foundry e do
+  sistema `demonlord` usado pelo módulo; amplie-o ao usar novas APIs.
+- `src/bridge/contracts.ts` espelha os contratos de `@ordem/contracts` no
+  repositório `guicaxero/founcord`; mudanças precisam de PR correspondente e
+  retrocompatível lá.
+- Use Bun: `bun install`, `bun run check` (typecheck, lint, testes e build).
+- `bun run build` gera `dist/ordem-foundry-bridge/`, a pasta instalável do
+  módulo; `dist/` nunca é versionado.
+
 ## Compatibilidade e segurança
 
 - Preserve compatibilidade com as versões do Foundry e do sistema `demonlord`
