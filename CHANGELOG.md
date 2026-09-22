@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.6.0 — não publicada
+## 0.6.0 — 2026-09-22
 
 - Reescreve o módulo em TypeScript estrito, organizado em módulos por
   responsabilidade, com testes automatizados e build por Bun.
