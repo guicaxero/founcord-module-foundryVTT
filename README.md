@@ -74,8 +74,9 @@ expira rapidamente e nunca é mostrado depois da conexão.
   mestre pode iniciar um novo pareamento quando necessário.
 
 O módulo não sincroniza descrições, notas do mestre, inventário ou conteúdo de
-livros. Somente nome, nível, ancestralidade, caminhos, proprietários e recursos
-mecânicos mínimos são enviados ao portal.
+livros. Somente nome, nível, ancestralidade, caminhos, proprietários, recursos
+mecânicos mínimos e o saldo das quatro moedas (`system.wealth`) são enviados ao
+portal.
 
 ### Configurar o Mercador
 

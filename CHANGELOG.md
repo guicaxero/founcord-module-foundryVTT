@@ -8,6 +8,9 @@
   pelo Bridge e o polling de comandos passa a ser adaptativo (5 s a 30 s).
 - Deixa de reiniciar sincronizações completas a cada atualização de usuário ou
   configuração enquanto a conexão já está ativa.
+- Envia o saldo das quatro moedas do personagem (coroas de ouro, xelins de
+  prata, centavos de cobre e trocados) para o portal exibir custo e saldo nos
+  pedidos do Mercador. Requer o portal com o contrato de moedas.
 
 ## 0.5.0 — 2026-09-11
 

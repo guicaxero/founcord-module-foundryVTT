@@ -28,6 +28,7 @@ describe("characterProjection", () => {
           insanity: { value: 2 },
           corruption: 1,
         },
+        wealth: { gc: 2, ss: "7", cp: 14, bits: null },
       },
       items: collection([item({ id: "path1", name: "Guerreiro", type: "path", system: { type: "novice" } })]),
     };
@@ -41,6 +42,7 @@ describe("characterProjection", () => {
       ancestry: "Humano",
       paths: { novice: "Guerreiro", expert: null, master: null, legendary: null },
       statistics: { healthMax: 20, damage: 4, healingRate: 5, insanity: 2, corruption: 1 },
+      wealth: { gc: 2, ss: 7, cp: 14, bits: 0 },
       sourceUpdatedAt: "2026-09-01T00:00:00.000Z",
     });
   });
