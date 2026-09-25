@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.7.0 — Não lançada
+
+- Envia uma miniatura de 64 px do ícone de cada item do Mercador, gerada no
+  navegador do mestre. O servidor do Foundry continua fora da internet.
+- Envia raridade, tipo de consumível, propriedades, dados de arma (dano,
+  empunhadura e requisito) e de armadura (defesa, defesa fixa, agilidade,
+  escudo e requisito).
+- Nova opção "Moeda dos preços sem moeda" na tela de conexão: um preço digitado
+  só com número, como `22`, é enviado como `22 cp` (ou na moeda escolhida).
+- Pedidos feitos antes da atualização continuam aceitos com o preço original.
+- Requer o portal com o contrato de detalhes do item.
+
 ## 0.6.0 — 2026-09-22
 
 - Reescreve o módulo em TypeScript estrito, organizado em módulos por

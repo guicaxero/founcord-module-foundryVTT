@@ -180,6 +180,15 @@
           {{#unless hasMerchantActors}}
             <p class="ordem-bridge-field-message">{{localize "ORDEM_BRIDGE.Merchant.NoActorsAvailable"}}</p>
           {{/unless}}
+          <label for="ordem-merchant-coin">{{localize "ORDEM_BRIDGE.Merchant.CoinLabel"}}</label>
+          <p id="ordem-merchant-coin-hint">{{localize "ORDEM_BRIDGE.Merchant.CoinHint"}}</p>
+          <div class="ordem-bridge-merchant-controls">
+            <select id="ordem-merchant-coin" name="merchantDefaultCoin" aria-describedby="ordem-merchant-coin-hint" {{#unless activeConnector}}disabled{{/unless}} {{#if busy}}disabled{{/if}}>
+              {{#each merchantCoins}}
+                <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+              {{/each}}
+            </select>
+          </div>
         </div>
 
         {{#if merchantConfigured}}

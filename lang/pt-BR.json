@@ -42,7 +42,7 @@
   "ORDEM_BRIDGE.Merchant.Description": "Escolha o ator cuja coleção de itens será publicada como catálogo no portal e no Discord. Esta etapa é somente consulta e não movimenta moedas ou inventários.",
   "ORDEM_BRIDGE.Merchant.ReadOnly": "Somente consulta",
   "ORDEM_BRIDGE.Merchant.ActorLabel": "Ator do Mercador",
-  "ORDEM_BRIDGE.Merchant.ActorHint": "Nome, descrição, categoria, preço e quantidade dos itens serão enviados em texto sanitizado.",
+  "ORDEM_BRIDGE.Merchant.ActorHint": "Nome, descrição, categoria, raridade, tipo de consumível, propriedades, dados de arma ou armadura, preço, quantidade e uma miniatura do ícone de cada item são enviados em texto sanitizado.",
   "ORDEM_BRIDGE.Merchant.NoActor": "Nenhum ator selecionado",
   "ORDEM_BRIDGE.Merchant.NoActorsAvailable": "Este mundo ainda não possui atores. Crie o Mercador e volte a esta tela.",
   "ORDEM_BRIDGE.Merchant.MissingActor": "O ator selecionado anteriormente não existe mais. Escolha outro ator ou remova a seleção.",
@@ -119,5 +119,12 @@
   "ORDEM_BRIDGE.Purchase.NoMutation": "Moedas, itens e estoque permanecem como estavam. Faça o acerto no Foundry e registre a decisão no portal.",
   "ORDEM_BRIDGE.Errors.Unknown": "Não foi possível concluir a operação.",
   "ORDEM_BRIDGE.Common.Waiting": "Aguardando primeiro envio",
-  "ORDEM_BRIDGE.Common.LinkedCampaign": "a campanha vinculada"
+  "ORDEM_BRIDGE.Common.LinkedCampaign": "a campanha vinculada",
+  "ORDEM_BRIDGE.Merchant.CoinLabel": "Moeda dos preços sem moeda",
+  "ORDEM_BRIDGE.Merchant.CoinHint": "Quando o preço de um item for só um número, como 22, o portal mostra este valor nesta moeda. Preços com moeda, como 5 ss ou 2 gc 5 ss, não mudam.",
+  "ORDEM_BRIDGE.Merchant.CoinGc": "Coroas de ouro (gc)",
+  "ORDEM_BRIDGE.Merchant.CoinSs": "Xelins de prata (ss)",
+  "ORDEM_BRIDGE.Merchant.CoinCp": "Centavos de cobre (cp)",
+  "ORDEM_BRIDGE.Merchant.CoinBits": "Trocados (bits)",
+  "ORDEM_BRIDGE.Errors.MerchantCoinInvalid": "Escolha uma moeda válida."
 }

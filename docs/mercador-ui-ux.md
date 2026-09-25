@@ -47,4 +47,13 @@ prometer compras, transferências ou edição externa do inventário.
 - Salvar uma seleção válida envia o catálogo imediatamente.
 - Alterações no ator ou em seus itens agendam nova sincronização.
 - Zero e quantidade desconhecida permanecem estados diferentes.
-- HTML é convertido para texto sanitizado e imagens locais não são publicadas.
+- HTML é convertido para texto sanitizado. Caminhos locais de imagem não são
+  publicados; o ícone vai como miniatura de 64 px gerada no navegador do mestre,
+  até 15 000 caracteres por item e 800 000 por catálogo. Ícone que não carrega
+  em até 5 s segue sem imagem.
+- "Moeda dos preços sem moeda" fica logo abaixo do ator, com rótulo, ajuda
+  associada por `aria-describedby` e as quatro moedas do sistema pelo nome.
+  O valor padrão é centavos de cobre. Salvar o Mercador grava a moeda e reenvia
+  o catálogo.
+- Um preço só com número recebe a moeda escolhida (`22` vira `22 cp`); preços
+  com moeda ou especiais seguem como escritos.
