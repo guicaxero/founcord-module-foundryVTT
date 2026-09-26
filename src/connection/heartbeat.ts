@@ -5,6 +5,7 @@ import { isCredentialedGameMaster } from "../gm";
 import { setSettings } from "../settings";
 import { renderConnectionApplication } from "../ui/refresh";
 import { handleOperationalError } from "./operational-errors";
+import { runtimeVersions } from "./versions";
 
 let active = false;
 let timer: ReturnType<typeof setTimeout> | null = null;
@@ -43,14 +44,22 @@ function schedule(delay: number): void {
   }, delay);
 }
 
-async function performHeartbeat(): Promise<void> {
-  if (!isCredentialedGameMaster()) return;
-  const characters = game.actors.filter((actor) => actor.type === "character");
-  const response = await authenticatedRequest<HeartbeatResponse>("/heartbeat", {
+/**
+ * Presença do mundo. As versões vão junto para o portal saber o que está
+ * instalado depois de uma atualização, e não só o que havia no pareamento.
+ */
+export function heartbeatPayload(): HeartbeatRequest {
+  return {
     observedAt: new Date().toISOString(),
     activeUsers: game.users.filter((user) => user.active).length,
-    actorCount: characters.length,
-  } satisfies HeartbeatRequest);
+    actorCount: game.actors.filter((actor) => actor.type === "character").length,
+    ...runtimeVersions(),
+  };
+}
+
+async function performHeartbeat(): Promise<void> {
+  if (!isCredentialedGameMaster()) return;
+  const response = await authenticatedRequest<HeartbeatResponse>("/heartbeat", heartbeatPayload());
   const seconds = Number(response.nextHeartbeatSeconds);
   if (Number.isFinite(seconds)) intervalMs = Math.min(300, Math.max(15, seconds)) * 1_000;
   await setSettings({ lastHeartbeatAt: new Date().toISOString(), lastConnectionError: "" });
