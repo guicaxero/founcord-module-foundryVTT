@@ -32,6 +32,8 @@ describe("characterProjection", () => {
         wealth: { gc: 2, ss: "7", cp: 14, bits: null },
       },
       items: collection([item({ id: "path1", name: "Guerreiro", type: "path", system: { type: "novice" } })]),
+      createEmbeddedDocuments: async () => [],
+      deleteEmbeddedDocuments: async () => [],
     };
 
     expect(characterProjection(actor)).toEqual({

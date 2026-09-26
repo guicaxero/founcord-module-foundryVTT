@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.8.0 — Não lançada
+
+- Recebe o estoque sorteado no portal (`merchant.stock.replace`) e cria os itens
+  no ator do Lojista, com nome, tipo, ícone do sistema, preço, disponibilidade,
+  quantidade, propriedades, dano, empunhadura, defesa e requisito.
+- Troca somente os itens criados por sorteios anteriores; itens colocados à mão
+  no ator continuam como estão.
+- Reenviar o mesmo sorteio não duplica itens.
+- Valida o payload antes de tocar no ator: só os campos do contrato, ícones de
+  caminhos do Foundry e nada de HTML ou código vindo do portal.
+- Requer o portal com o catálogo e o sorteio de estoque do Lojista.
+
 ## 0.7.0 — 2026-09-25
 
 - Envia uma miniatura de 64 px do ícone de cada item do Mercador, gerada no

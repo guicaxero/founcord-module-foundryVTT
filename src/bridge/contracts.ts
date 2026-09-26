@@ -134,6 +134,33 @@ export type ChatEntry = Readonly<{
   kind: "message" | "roll";
 }>;
 
+/** Item sorteado no portal, espelhando `MerchantStockEntrySchema` de @ordem/contracts. */
+export type MerchantStockEntry = Readonly<{
+  catalogItemId: string;
+  name: string;
+  category: string;
+  kind: "weapon" | "armor" | "item";
+  availability: "common" | "uncommon" | "rare" | "exotic";
+  price: string | null;
+  damage: string | null;
+  hands: "one" | "two" | "off" | null;
+  agility: string | null;
+  fixed: string | null;
+  requirement: MerchantRequirement | null;
+  properties: string | null;
+  description: string | null;
+  icon: string | null;
+  source: string;
+  quantity: number;
+}>;
+
+export type MerchantStockReplacePayload = Readonly<{
+  drawId: string;
+  campaignId: string;
+  items: readonly MerchantStockEntry[];
+  requestedAt: string;
+}>;
+
 export type MerchantPurchasePayload = Readonly<{
   requestId: string;
   campaignId: string;
@@ -173,6 +200,7 @@ export type BridgeCommand = CommandEnvelope &
         }>;
       }>
     | Readonly<{ type: "merchant.purchase.request"; payload: MerchantPurchasePayload }>
+    | Readonly<{ type: "merchant.stock.replace"; payload: MerchantStockReplacePayload }>
   );
 
 export type CommandPollResponse = Readonly<{ commands?: readonly BridgeCommand[] }>;

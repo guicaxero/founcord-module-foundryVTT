@@ -126,5 +126,7 @@
   "ORDEM_BRIDGE.Merchant.CoinSs": "Silver shillings (ss)",
   "ORDEM_BRIDGE.Merchant.CoinCp": "Copper pennies (cp)",
   "ORDEM_BRIDGE.Merchant.CoinBits": "Bits (bits)",
-  "ORDEM_BRIDGE.Errors.MerchantCoinInvalid": "Choose a valid coin."
+  "ORDEM_BRIDGE.Errors.MerchantCoinInvalid": "Choose a valid coin.",
+  "ORDEM_BRIDGE.Errors.StockInvalid": "The stock received from the portal is invalid.",
+  "ORDEM_BRIDGE.Errors.StockMerchantMissing": "No actor is configured as the Merchant in this world. Choose the Merchant on the connection screen and resend the stock."
 }
