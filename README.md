@@ -102,6 +102,16 @@ sorteios anteriores são substituídos (eles levam uma marca do módulo); o que 
 mestre colocou à mão continua no ator. Reenviar o mesmo sorteio não duplica
 itens. Sem o mestre conectado, o envio espera na fila do Bridge.
 
+### Criaturas montadas no portal
+
+Na área **Criaturas** do painel, o mestre monta uma criatura a partir do
+bestiário importado ou do zero. Ao enviar, o módulo recebe o comando
+`creature.upsert` e cria o ator na pasta **Ordem — Criaturas**. Reenviar
+atualiza o mesmo ator (ele leva uma marca do módulo): atributos,
+características e os itens criados pelo portal são substituídos, e itens
+colocados à mão continuam. Nenhuma macro ou código é executado, e as
+descrições chegam como texto simples.
+
 Pedidos feitos no portal aparecem como sussurros para os mestres depois que o
 módulo revalida personagem, item, preço e estoque. Eles continuam sendo pedidos:
 o mestre realiza o acerto no Foundry e registra a decisão no portal. Esta versão

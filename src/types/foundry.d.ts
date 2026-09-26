@@ -97,12 +97,29 @@ declare global {
     readonly img?: string | null;
     readonly prototypeToken?: Readonly<{ texture?: Readonly<{ src?: string | null }> | null }> | null;
     readonly ownership?: Readonly<Record<string, number>>;
+    readonly flags?: Readonly<Record<string, Readonly<Record<string, unknown>> | undefined>>;
+    readonly folder?: FoundryFolder | null;
     readonly _stats?: DocumentStats;
+    update(data: Readonly<Record<string, unknown>>): Promise<unknown>;
     createEmbeddedDocuments(
       embeddedName: "Item",
       data: readonly Readonly<Record<string, unknown>>[],
     ): Promise<readonly FoundryItem[]>;
     deleteEmbeddedDocuments(embeddedName: "Item", ids: readonly string[]): Promise<unknown>;
+  }
+
+  interface FoundryFolder {
+    readonly id: string;
+    readonly name: string | null;
+    readonly type: string;
+  }
+
+  interface ActorStatic {
+    create(data: Readonly<Record<string, unknown>>): Promise<FoundryActor | undefined>;
+  }
+
+  interface FolderStatic {
+    create(data: Readonly<{ name: string; type: "Actor"; color?: string }>): Promise<FoundryFolder | undefined>;
   }
 
   interface FoundryRoll {
@@ -156,6 +173,7 @@ declare global {
     readonly user: FoundryUser | null;
     readonly users: FoundryCollection<FoundryUser> & { readonly activeGM?: FoundryUser | null };
     readonly actors: FoundryCollection<FoundryActor>;
+    readonly folders: FoundryCollection<FoundryFolder>;
     readonly world: Readonly<{ id: string; title: string }>;
     readonly system: Readonly<{ id: string; title: string; version: string }>;
     readonly version: string;
@@ -209,6 +227,8 @@ declare global {
     Item?: Readonly<{ typeLabels?: Readonly<Record<string, string>> }>;
   }>;
   const ChatMessage: ChatMessageStatic;
+  const Actor: ActorStatic;
+  const Folder: FolderStatic;
   const Hooks: Readonly<{
     on(event: string, callback: (...args: never[]) => unknown): number;
     once(event: string, callback: (...args: never[]) => unknown): number;

@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.10.0 — Não lançada
+
+- Recebe as criaturas montadas no portal (`creature.upsert`) e cria o ator do
+  tipo criatura na pasta "Ordem — Criaturas", com atributos, características,
+  dificuldade, descritor, descrição, imagem, token e os itens de ataque, traço,
+  ação especial, fim da rodada e magia.
+- Reenviar a criatura atualiza o mesmo ator. Só os itens criados pelo portal
+  são trocados; itens colocados à mão continuam no ator.
+- Uma versão já aplicada não é reaplicada, e versões antigas não sobrescrevem
+  as novas.
+- Valida a criatura antes de tocar em qualquer ator: só os campos do contrato,
+  imagens com caminho do Foundry ou HTTPS e descrições em texto simples,
+  escapadas no módulo.
+- Requer o portal com o criador de criaturas.
+
 ## 0.9.0 — 2026-09-26
 
 - Envia o retrato (`actor.img`) e o token (`prototypeToken.texture.src`) de cada

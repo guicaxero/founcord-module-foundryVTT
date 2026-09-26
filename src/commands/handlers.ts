@@ -4,6 +4,7 @@ import { nullableLongText, nullableQuantity } from "../sanitize";
 import { merchantActorId, merchantDefaultCoin } from "../settings";
 import { syncCharacters } from "../sync/characters";
 import { merchantPrice } from "../sync/merchant-item";
+import { upsertCreature } from "./creatures";
 import { replaceMerchantStock } from "./merchant-stock";
 
 /**
@@ -33,6 +34,8 @@ export async function executeCommand(command: BridgeCommand): Promise<CommandRes
       return createMerchantPurchaseNotification(command.payload);
     case "merchant.stock.replace":
       return replaceMerchantStock(command.payload);
+    case "creature.upsert":
+      return upsertCreature(command.payload);
     default: {
       const unsupported: never = command;
       throw new Error(
