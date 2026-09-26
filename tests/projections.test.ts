@@ -1,9 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { chatMessageProjection, isPublicChatMessage } from "../src/capture/chat";
 import { merchantPurchaseMessage } from "../src/commands/handlers";
 import { failureDelay, nextIdleDelay } from "../src/commands/poller";
 import { characterProjection } from "../src/sync/characters";
-import { merchantItemProjection } from "../src/sync/merchant";
+import { merchantItemProjection, merchantPrice } from "../src/sync/merchant-item";
+import { clearThumbnailCache, itemImage } from "../src/sync/thumbnail";
 import { collection, setWorld } from "./foundry-mocks";
 
 const stats = { modifiedTime: Date.UTC(2026, 8, 1) };
@@ -49,25 +50,92 @@ describe("characterProjection", () => {
 });
 
 describe("merchantItemProjection", () => {
-  it("mantém o preço como registrado e descarta imagens locais", () => {
+  const options = { defaultCoin: "cp" as const, imageUrl: null, category: "Arma" };
+
+  it("mantém o preço com moeda e completa números puros com a moeda padrão", () => {
+    expect(merchantPrice("5 ss", "cp")).toBe("5 ss");
+    expect(merchantPrice("22", "cp")).toBe("22 cp");
+    expect(merchantPrice(22, "gc")).toBe("22 gc");
+    expect(merchantPrice("2 gc e um favor", "cp")).toBe("2 gc e um favor");
+    expect(merchantPrice("", "cp")).toBeNull();
+  });
+
+  it("projeta raridade, propriedades e dados de arma do sistema", () => {
     const projection = merchantItemProjection(
       item({
         id: "espada",
         name: " Espada curta ",
         type: "weapon",
         img: "icons/weapons/sword.webp",
-        system: { value: "5 cp", quantity: "2", description: "<p>Afiada</p><p class='secret'>x</p>" },
+        system: {
+          value: "5",
+          quantity: "2",
+          description: "<p>Afiada</p><p class='secret'>x</p>",
+          availability: "U",
+          properties: "Precisa",
+          hands: "one",
+          action: { damage: "1d6" },
+          requirement: { attribute: "agility", minvalue: 11 },
+        },
       }),
+      options,
     );
     expect(projection).toMatchObject({
       itemId: "espada",
       name: "Espada curta",
       description: "Afiada",
-      category: "TYPES.Item.weapon",
+      category: "Arma",
       imageUrl: null,
       price: "5 cp",
       quantity: 2,
+      availability: "uncommon",
+      consumableType: null,
+      properties: "Precisa",
+      weapon: { damage: "1d6", hands: "one", requirement: { attribute: "agility", minimum: 11 } },
+      armor: null,
     });
+  });
+
+  it("projeta armadura e consumível e ignora códigos desconhecidos", () => {
+    const armor = merchantItemProjection(
+      item({
+        id: "malha",
+        type: "armor",
+        system: { defense: 15, isShield: false, availability: "x", requirement: { attribute: "", minvalue: 0 } },
+      }),
+      options,
+    );
+    expect(armor).toMatchObject({
+      availability: null,
+      armor: { defense: "15", agility: null, fixed: null, shield: false, requirement: null },
+      weapon: null,
+    });
+
+    const potion = merchantItemProjection(
+      item({ id: "pocao", type: "item", system: { consumabletype: "P", availability: "r" } }),
+      options,
+    );
+    expect(potion).toMatchObject({ consumableType: "potion", availability: "rare" });
+  });
+
+  it("não publica caminhos locais quando a miniatura não pode ser gerada", async () => {
+    clearThumbnailCache();
+    // Ícone ausente no servidor do Foundry: a imagem falha ao carregar.
+    class FailingImage {
+      decoding = "";
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      set src(_value: string) {
+        queueMicrotask(() => this.onerror?.());
+      }
+    }
+    vi.stubGlobal("Image", FailingImage);
+    await expect(itemImage("icons/weapons/sword.webp")).resolves.toBeNull();
+    await expect(itemImage("https://cdn.example.test/sword.webp")).resolves.toBe(
+      "https://cdn.example.test/sword.webp",
+    );
+    await expect(itemImage("http://foundry.local/sword.webp")).resolves.toBeNull();
+    vi.unstubAllGlobals();
   });
 });
 

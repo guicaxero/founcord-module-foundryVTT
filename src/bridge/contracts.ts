@@ -87,14 +87,39 @@ export type SyncResponse = Readonly<{
   stale: boolean;
 }>;
 
+export type MerchantRequirement = Readonly<{
+  attribute: "strength" | "agility" | "intellect" | "will" | "perception";
+  minimum: number;
+}>;
+
+export type MerchantWeaponDetails = Readonly<{
+  damage: string | null;
+  hands: "one" | "two" | "off" | null;
+  requirement: MerchantRequirement | null;
+}>;
+
+export type MerchantArmorDetails = Readonly<{
+  defense: string | null;
+  agility: string | null;
+  fixed: string | null;
+  shield: boolean;
+  requirement: MerchantRequirement | null;
+}>;
+
 export type MerchantItemProjection = Readonly<{
   itemId: string;
   name: string;
   description: string | null;
   category: string | null;
+  /** HTTPS público ou miniatura `data:image/webp;base64,...` de 64 px. */
   imageUrl: string | null;
   price: string | null;
   quantity: number | null;
+  availability: "common" | "uncommon" | "rare" | "exotic" | null;
+  consumableType: "drink" | "food" | "incantation" | "potion" | "poison" | "trinket" | null;
+  properties: string | null;
+  weapon: MerchantWeaponDetails | null;
+  armor: MerchantArmorDetails | null;
   sourceUpdatedAt: string;
 }>;
 

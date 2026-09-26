@@ -10,7 +10,13 @@ import {
 import { formatLocalized, localize } from "../i18n";
 import { bridgeUrl, connection, pairing } from "../settings";
 import { syncCharacters } from "../sync/characters";
-import { merchantActorOptions, saveMerchantActor, syncMerchantCatalog } from "../sync/merchant";
+import {
+  merchantActorOptions,
+  merchantCoinOptions,
+  saveMerchantActor,
+  syncMerchantCatalog,
+} from "../sync/merchant";
+import { isMerchantCoin } from "../sync/merchant-item";
 import { isActiveConnectionApplication, setActiveConnectionApplication } from "./refresh";
 import { publicStatus } from "./status";
 
@@ -82,6 +88,7 @@ export class BridgeConnectionApplication extends HandlebarsApplicationMixin(Appl
       systemTitle: game.system.title,
       bridgeUrl: bridgeUrl(),
       merchantActors: merchantActorOptions(),
+      merchantCoins: merchantCoinOptions(),
     };
   }
 
@@ -167,9 +174,11 @@ export class BridgeConnectionApplication extends HandlebarsApplicationMixin(Appl
   static async saveMerchant(this: BridgeConnectionApplication): Promise<void> {
     const select = this.element.querySelector("[name='merchantActorId']");
     const actorId = select instanceof HTMLSelectElement ? select.value : "";
+    const coinSelect = this.element.querySelector("[name='merchantDefaultCoin']");
+    const coin = coinSelect instanceof HTMLSelectElement && isMerchantCoin(coinSelect.value) ? coinSelect.value : undefined;
     await this.runOperation(
       "merchant-save",
-      () => saveMerchantActor(actorId),
+      () => saveMerchantActor(actorId, coin),
       actorId
         ? localize(
             "ORDEM_BRIDGE.Feedback.MerchantSaved",

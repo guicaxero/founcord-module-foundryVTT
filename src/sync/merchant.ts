@@ -9,15 +9,16 @@ import {
   isCredentialedGameMaster,
 } from "../gm";
 import { localize } from "../i18n";
-import {
-  documentUpdatedAt,
-  nullableLongText,
-  nullableQuantity,
-  publicHttpsUrl,
-  sanitizedPlainText,
-} from "../sanitize";
-import { merchantActorId, setSettings } from "../settings";
+import { documentUpdatedAt, nullableLongText } from "../sanitize";
+import { merchantActorId, merchantDefaultCoin, setSettings } from "../settings";
 import { renderConnectionApplication } from "../ui/refresh";
+import {
+  MERCHANT_COINS,
+  isMerchantCoin,
+  merchantItemProjection,
+  type MerchantCoin,
+} from "./merchant-item";
+import { MAX_CATALOG_THUMBNAIL_CHARS, itemImage } from "./thumbnail";
 
 let timer: ReturnType<typeof setTimeout> | null = null;
 let inFlight: Promise<MerchantSyncResult> | null = null;
@@ -64,7 +65,7 @@ async function performMerchantSync(): Promise<MerchantSyncResult> {
   }
 
   const capturedAt = new Date().toISOString();
-  const items = [...(actor.items ?? [])].slice(0, MAX_MERCHANT_ITEMS).map(merchantItemProjection);
+  const items = await merchantItems([...(actor.items ?? [])].slice(0, MAX_MERCHANT_ITEMS));
   const response = await authenticatedRequest<SyncResponse>("/merchant/sync", {
     syncId: crypto.randomUUID(),
     capturedAt,
@@ -84,10 +85,13 @@ async function performMerchantSync(): Promise<MerchantSyncResult> {
   return { ...response, synchronizedMerchantItems: items.length };
 }
 
-export async function saveMerchantActor(actorId: string): Promise<void> {
+export async function saveMerchantActor(actorId: string, defaultCoin?: MerchantCoin): Promise<void> {
   assertGameMaster();
   assertPrimaryGameMaster();
   const normalized = actorId.trim();
+  if (defaultCoin !== undefined && !isMerchantCoin(defaultCoin)) {
+    throw new Error(localize("ORDEM_BRIDGE.Errors.MerchantCoinInvalid", "Escolha uma moeda válida."));
+  }
   if (normalized && !game.actors.get(normalized)) {
     throw new Error(
       localize(
@@ -98,10 +102,29 @@ export async function saveMerchantActor(actorId: string): Promise<void> {
   }
   await setSettings({
     merchantActorId: normalized,
+    ...(defaultCoin ? { merchantDefaultCoin: defaultCoin } : {}),
     lastMerchantSyncAt: "",
     lastMerchantSyncCount: 0,
   });
   if (normalized && isCredentialedGameMaster()) await syncMerchantCatalog();
+}
+
+export type MerchantCoinOption = Readonly<{ value: MerchantCoin; label: string; selected: boolean }>;
+
+/** Opções da moeda padrão, com o nome do livro na língua do mundo. */
+export function merchantCoinOptions(): MerchantCoinOption[] {
+  const selected = merchantDefaultCoin();
+  const labels: Readonly<Record<MerchantCoin, [string, string]>> = {
+    gc: ["ORDEM_BRIDGE.Merchant.CoinGc", "Coroas de ouro (gc)"],
+    ss: ["ORDEM_BRIDGE.Merchant.CoinSs", "Xelins de prata (ss)"],
+    cp: ["ORDEM_BRIDGE.Merchant.CoinCp", "Centavos de cobre (cp)"],
+    bits: ["ORDEM_BRIDGE.Merchant.CoinBits", "Trocados (bits)"],
+  };
+  return MERCHANT_COINS.map((value) => ({
+    value,
+    label: localize(labels[value][0], labels[value][1]),
+    selected: value === selected,
+  }));
 }
 
 export type MerchantActorOption = Readonly<{ id: string; name: string; selected: boolean }>;
@@ -117,18 +140,20 @@ export function merchantActorOptions(): MerchantActorOption[] {
     .sort((left, right) => left.name.localeCompare(right.name, game.i18n.lang));
 }
 
-/** Projeção pública do item: texto sanitizado, preço como registrado e imagem só se HTTPS. */
-export function merchantItemProjection(item: FoundryItem): MerchantItemProjection {
-  return {
-    itemId: String(item.id).slice(0, 128),
-    name: String(item.name ?? "").trim().slice(0, 160) || "Item sem nome",
-    description: sanitizedPlainText(item.system?.description, 4_000),
-    category: merchantItemCategory(item),
-    imageUrl: publicHttpsUrl(item.img),
-    price: nullableLongText(item.system?.value, 64),
-    quantity: nullableQuantity(item.system?.quantity),
-    sourceUpdatedAt: documentUpdatedAt(item),
-  };
+/**
+ * Projeta os itens com as miniaturas já geradas. As imagens entram até o
+ * orçamento do catálogo; depois dele, os itens seguem sem ícone.
+ */
+export async function merchantItems(items: readonly FoundryItem[]): Promise<MerchantItemProjection[]> {
+  const defaultCoin = merchantDefaultCoin();
+  const images = await Promise.all(items.map((item) => itemImage(item.img)));
+  let budget = MAX_CATALOG_THUMBNAIL_CHARS;
+  return items.map((item, index) => {
+    const image = images[index] ?? null;
+    const imageUrl = image && image.length <= budget ? image : null;
+    if (imageUrl) budget -= imageUrl.length;
+    return merchantItemProjection(item, { defaultCoin, imageUrl, category: merchantItemCategory(item) });
+  });
 }
 
 function merchantItemCategory(item: FoundryItem): string | null {

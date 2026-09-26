@@ -54,10 +54,25 @@ declare global {
     }> | null;
   }
 
+  interface DemonLordRequirement {
+    readonly attribute?: string | null;
+    readonly minvalue?: number | string | null;
+  }
+
   interface DemonLordItemSystem {
     readonly value?: string | number | null;
     readonly quantity?: number | string | null;
     readonly description?: string | null;
+    readonly availability?: string | null;
+    readonly consumabletype?: string | null;
+    readonly properties?: string | null;
+    readonly hands?: string | null;
+    readonly action?: Readonly<{ damage?: string | null }> | null;
+    readonly requirement?: DemonLordRequirement | null;
+    readonly defense?: string | number | null;
+    readonly agility?: string | number | null;
+    readonly fixed?: string | number | null;
+    readonly isShield?: boolean | null;
     readonly type?: string | null;
     readonly pathType?: string | null;
   }

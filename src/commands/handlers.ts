@@ -1,8 +1,9 @@
 import type { BridgeCommand, CommandResult, MerchantPurchasePayload } from "../bridge/contracts";
 import { localize } from "../i18n";
 import { nullableLongText, nullableQuantity } from "../sanitize";
-import { merchantActorId } from "../settings";
+import { merchantActorId, merchantDefaultCoin } from "../settings";
 import { syncCharacters } from "../sync/characters";
+import { merchantPrice } from "../sync/merchant-item";
 
 /**
  * Executa somente os tipos de comando do contrato. Nenhum código ou macro
@@ -72,9 +73,12 @@ async function createMerchantPurchaseNotification(
       ),
     );
   }
-  const observedPrice = nullableLongText(item.system?.value, 64);
+  // O catálogo envia o preço com a moeda padrão (`22` vira `22 cp`); pedidos
+  // feitos antes dessa normalização ainda trazem o texto original.
+  const recordedPrice = nullableLongText(item.system?.value, 64);
+  const observedPrice = merchantPrice(item.system?.value, merchantDefaultCoin());
   const observedQuantity = nullableQuantity(item.system?.quantity);
-  if (!observedPrice || observedPrice !== payload.item.price) {
+  if (!observedPrice || (observedPrice !== payload.item.price && recordedPrice !== payload.item.price)) {
     throw new Error(
       localize(
         "ORDEM_BRIDGE.Errors.PurchasePriceChanged",

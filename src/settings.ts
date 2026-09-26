@@ -1,5 +1,6 @@
 import type { ChatEntry } from "./bridge/contracts";
 import { DEFAULT_BRIDGE_URL, MODULE_ID } from "./constants";
+import { isMerchantCoin, type MerchantCoin } from "./sync/merchant-item";
 
 export type ConnectionRecord = Readonly<{
   worldId?: string;
@@ -26,6 +27,7 @@ type ModuleSettings = {
   lastSyncAt: string;
   lastSyncCount: number;
   merchantActorId: string;
+  merchantDefaultCoin: string;
   lastMerchantSyncAt: string;
   lastMerchantSyncCount: number;
   pendingChatEvents: readonly ChatEntry[];
@@ -57,6 +59,8 @@ const definitions: { [K in SettingKey]: SettingDefinition<K> } = {
   lastSyncAt: { scope: "world", type: String, default: "" },
   lastSyncCount: { scope: "world", type: Number, default: 0 },
   merchantActorId: { scope: "world", type: String, default: "" },
+  // Moeda aplicada a preços digitados só com número, como `22`.
+  merchantDefaultCoin: { scope: "world", type: String, default: "cp" },
   lastMerchantSyncAt: { scope: "world", type: String, default: "" },
   lastMerchantSyncCount: { scope: "world", type: Number, default: 0 },
   pendingChatEvents: { scope: "world", type: Object, default: [] },
@@ -102,6 +106,11 @@ export async function setSettings(values: Partial<ModuleSettings>): Promise<void
 
 export function bridgeUrl(): string {
   return String(getSetting("bridgeUrl") || DEFAULT_BRIDGE_URL).replace(/\/+$/u, "");
+}
+
+export function merchantDefaultCoin(): MerchantCoin {
+  const coin = String(getSetting("merchantDefaultCoin") ?? "").trim();
+  return isMerchantCoin(coin) ? coin : "cp";
 }
 
 export function merchantActorId(): string {
