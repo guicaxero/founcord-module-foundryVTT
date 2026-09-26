@@ -4,6 +4,7 @@ import { nullableLongText, nullableQuantity } from "../sanitize";
 import { merchantActorId, merchantDefaultCoin } from "../settings";
 import { syncCharacters } from "../sync/characters";
 import { merchantPrice } from "../sync/merchant-item";
+import { replaceMerchantStock } from "./merchant-stock";
 
 /**
  * Executa somente os tipos de comando do contrato. Nenhum código ou macro
@@ -30,6 +31,8 @@ export async function executeCommand(command: BridgeCommand): Promise<CommandRes
     }
     case "merchant.purchase.request":
       return createMerchantPurchaseNotification(command.payload);
+    case "merchant.stock.replace":
+      return replaceMerchantStock(command.payload);
     default: {
       const unsupported: never = command;
       throw new Error(

@@ -86,10 +86,21 @@ Mercador**. O primeiro catálogo é enviado imediatamente. Alterações futuras 
 ator e em seus itens agendam novas sincronizações; o mestre também pode usar
 **Sincronizar catálogo**.
 
-O catálogo é uma projeção pública somente leitura: envia no máximo 500 itens
-com nome, descrição sanitizada, categoria, preço, quantidade e, quando já for
-pública, uma URL HTTPS de imagem. Caminhos locais do Foundry, flags, notas de
-mestre e demais dados do ator não são enviados.
+O catálogo é uma projeção pública: envia no máximo 500 itens com nome,
+descrição sanitizada, categoria, preço, quantidade, raridade, tipo de
+consumível, propriedades, dados de arma e armadura e uma miniatura de 64 px do
+ícone, gerada no navegador do mestre. Caminhos locais do Foundry, flags, notas
+de mestre e demais dados do ator não são enviados. Preços digitados só com
+número recebem a moeda escolhida em **Moeda dos preços sem moeda**.
+
+### Estoque sorteado pelo portal
+
+No painel do portal, **Estoque do Lojista** sorteia itens do catálogo da
+campanha. Ao confirmar o envio, o módulo recebe o comando
+`merchant.stock.replace` e cria os itens no ator do Mercador. Só os itens de
+sorteios anteriores são substituídos (eles levam uma marca do módulo); o que o
+mestre colocou à mão continua no ator. Reenviar o mesmo sorteio não duplica
+itens. Sem o mestre conectado, o envio espera na fila do Bridge.
 
 Pedidos feitos no portal aparecem como sussurros para os mestres depois que o
 módulo revalida personagem, item, preço e estoque. Eles continuam sendo pedidos:

@@ -126,5 +126,7 @@
   "ORDEM_BRIDGE.Merchant.CoinSs": "Xelins de prata (ss)",
   "ORDEM_BRIDGE.Merchant.CoinCp": "Centavos de cobre (cp)",
   "ORDEM_BRIDGE.Merchant.CoinBits": "Trocados (bits)",
-  "ORDEM_BRIDGE.Errors.MerchantCoinInvalid": "Escolha uma moeda válida."
+  "ORDEM_BRIDGE.Errors.MerchantCoinInvalid": "Escolha uma moeda válida.",
+  "ORDEM_BRIDGE.Errors.StockInvalid": "O estoque recebido do portal é inválido.",
+  "ORDEM_BRIDGE.Errors.StockMerchantMissing": "Nenhum ator está configurado como Lojista neste mundo. Escolha o Mercador na tela de conexão e reenvie o estoque."
 }

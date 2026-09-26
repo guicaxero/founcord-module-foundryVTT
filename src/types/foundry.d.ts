@@ -84,6 +84,7 @@ declare global {
     readonly img?: string | null;
     readonly system?: DemonLordItemSystem | null;
     readonly parent?: FoundryActor | null;
+    readonly flags?: Readonly<Record<string, Readonly<Record<string, unknown>> | undefined>>;
     readonly _stats?: DocumentStats;
   }
 
@@ -95,6 +96,11 @@ declare global {
     readonly items: FoundryCollection<FoundryItem>;
     readonly ownership?: Readonly<Record<string, number>>;
     readonly _stats?: DocumentStats;
+    createEmbeddedDocuments(
+      embeddedName: "Item",
+      data: readonly Readonly<Record<string, unknown>>[],
+    ): Promise<readonly FoundryItem[]>;
+    deleteEmbeddedDocuments(embeddedName: "Item", ids: readonly string[]): Promise<unknown>;
   }
 
   interface FoundryRoll {
