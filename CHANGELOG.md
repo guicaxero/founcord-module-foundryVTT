@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.8.0 — Não lançada
+## 0.8.0 — 2026-09-26
 
 - Recebe o estoque sorteado no portal (`merchant.stock.replace`) e cria os itens
   no ator do Lojista, com nome, tipo, ícone do sistema, preço, disponibilidade,
