@@ -35,6 +35,10 @@ permissões ou comportamento percebido, o pipeline é obrigatório.
   `guicaxero/founcord` e não devem ser copiados para cá.
 - Nenhum secret, token operacional ou conteúdo protegido de livros pode fazer
   parte do artefato publicado.
+- A pasta `compendium/` na raiz FMS (fora dos repositórios) guarda os exports
+  pt-BR do Shadow of the Demon Lord. Consulte-a para conferir nomes de campos e
+  formatos do sistema `demonlord`, mas **nunca** copie conteúdo dela para cá:
+  este repositório é público. Testes usam documentos sintéticos.
 
 ## Código e build
 

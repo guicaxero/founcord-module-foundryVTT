@@ -128,5 +128,7 @@
   "ORDEM_BRIDGE.Merchant.CoinBits": "Trocados (bits)",
   "ORDEM_BRIDGE.Errors.MerchantCoinInvalid": "Escolha uma moeda válida.",
   "ORDEM_BRIDGE.Errors.StockInvalid": "O estoque recebido do portal é inválido.",
-  "ORDEM_BRIDGE.Errors.StockMerchantMissing": "Nenhum ator está configurado como Lojista neste mundo. Escolha o Mercador na tela de conexão e reenvie o estoque."
+  "ORDEM_BRIDGE.Errors.StockMerchantMissing": "Nenhum ator está configurado como Lojista neste mundo. Escolha o Mercador na tela de conexão e reenvie o estoque.",
+  "ORDEM_BRIDGE.Errors.CreatureInvalid": "A criatura recebida do portal é inválida.",
+  "ORDEM_BRIDGE.Errors.CreatureNotCreated": "O Foundry não criou o ator da criatura."
 }

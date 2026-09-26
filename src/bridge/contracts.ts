@@ -171,6 +171,65 @@ export type MerchantStockReplacePayload = Readonly<{
   requestedAt: string;
 }>;
 
+type CreatureAttribute = "strength" | "agility" | "intellect" | "will" | "perception";
+
+type CreatureItemBase = Readonly<{ id: string; name: string; description: string; image: string | null }>;
+
+/** Item da criatura, espelhando `CreatureItemSchema` de @ordem/contracts. */
+export type CreatureItem =
+  | (CreatureItemBase &
+      Readonly<{
+        kind: "attack";
+        bonus: string;
+        against: "defense" | CreatureAttribute;
+        boons: number;
+        damage: string;
+        properties: string;
+      }>)
+  | (CreatureItemBase & Readonly<{ kind: "trait" | "special_action" | "end_of_round" }>)
+  | (CreatureItemBase &
+      Readonly<{
+        kind: "spell";
+        tradition: string;
+        rank: number;
+        attribute: "intellect" | "will";
+        spellType: "attack" | "utility";
+        target: string;
+        area: string;
+        duration: string;
+      }>);
+
+/** Criatura montada no portal, espelhando `CreatureDraftSchema` de @ordem/contracts. */
+export type CreatureDraft = Readonly<{
+  name: string;
+  descriptor: string;
+  description: string;
+  difficulty: number;
+  size: string;
+  image: string | null;
+  attributes: Readonly<Record<CreatureAttribute, number>>;
+  defense: number;
+  health: number;
+  speed: number;
+  power: number;
+  insanity: number;
+  corruption: number;
+  perceptionSenses: string;
+  speedTraits: string;
+  armor: string;
+  frightening: boolean;
+  horrifying: boolean;
+  items: readonly CreatureItem[];
+}>;
+
+export type CreatureUpsertPayload = Readonly<{
+  creatureId: string;
+  campaignId: string;
+  version: number;
+  creature: CreatureDraft;
+  requestedAt: string;
+}>;
+
 export type MerchantPurchasePayload = Readonly<{
   requestId: string;
   campaignId: string;
@@ -211,6 +270,7 @@ export type BridgeCommand = CommandEnvelope &
       }>
     | Readonly<{ type: "merchant.purchase.request"; payload: MerchantPurchasePayload }>
     | Readonly<{ type: "merchant.stock.replace"; payload: MerchantStockReplacePayload }>
+    | Readonly<{ type: "creature.upsert"; payload: CreatureUpsertPayload }>
   );
 
 export type CommandPollResponse = Readonly<{ commands?: readonly BridgeCommand[] }>;

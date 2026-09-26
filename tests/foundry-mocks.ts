@@ -20,6 +20,7 @@ const mockGame = {
   user: null as FoundryUser | null,
   users: collection<FoundryUser>([]),
   actors: collection<FoundryActor>([]),
+  folders: collection<FoundryFolder>([]),
   world: { id: "mundo-teste", title: "Mundo de teste" },
   system: { id: "demonlord", title: "Shadow of the Demon Lord", version: "6.1.4" },
   version: "14.320",
@@ -42,10 +43,12 @@ const mockGame = {
 
 export function setWorld(world: {
   actors?: readonly FoundryActor[];
+  folders?: readonly FoundryFolder[];
   users?: readonly FoundryUser[];
   user?: FoundryUser | null;
 }): void {
   if (world.actors) mockGame.actors = collection(world.actors);
+  if (world.folders) mockGame.folders = collection(world.folders);
   if (world.users) mockGame.users = collection(world.users);
   if (world.user !== undefined) mockGame.user = world.user;
 }
