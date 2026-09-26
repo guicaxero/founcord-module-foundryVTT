@@ -81,6 +81,12 @@ export type CharacterProjection = Readonly<{
   }>;
   /** Saldo em `system.wealth`; aceito pelo portal a partir do contrato com moedas. */
   wealth: CoinPurse;
+  /**
+   * Retrato e token (0.9.0+): miniatura, HTTPS ou `null` sem imagem. Ausente
+   * quando o orçamento de imagens acabou; o portal mantém a imagem anterior.
+   */
+  portraitUrl?: string | null;
+  tokenUrl?: string | null;
   sourceUpdatedAt: string;
 }>;
 

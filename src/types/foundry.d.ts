@@ -94,6 +94,8 @@ declare global {
     readonly type: string;
     readonly system?: DemonLordActorSystem | null;
     readonly items: FoundryCollection<FoundryItem>;
+    readonly img?: string | null;
+    readonly prototypeToken?: Readonly<{ texture?: Readonly<{ src?: string | null }> | null }> | null;
     readonly ownership?: Readonly<Record<string, number>>;
     readonly _stats?: DocumentStats;
     createEmbeddedDocuments(

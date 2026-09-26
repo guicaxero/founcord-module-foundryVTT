@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.9.0 — Não lançada
+
+- Envia o retrato (`actor.img`) e o token (`prototypeToken.texture.src`) de cada
+  personagem, como miniaturas geradas no navegador do mestre: retrato de 256 px
+  enquadrado pelo topo e token de 128 px inteiro, com fundo transparente.
+- Imagens que não carregam seguem como ausentes; a sincronização respeita um
+  orçamento total de imagens.
+- Requer o portal com as imagens de personagem.
+
 ## 0.8.1 — 2026-09-26
 
 - Envia as versões do Foundry, do sistema e do módulo a cada heartbeat. O
