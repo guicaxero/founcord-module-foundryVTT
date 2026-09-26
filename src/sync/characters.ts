@@ -5,6 +5,7 @@ import { assertCredentialedGameMaster, isCredentialedGameMaster } from "../gm";
 import { nullableText, safeInteger } from "../sanitize";
 import { setSettings } from "../settings";
 import { renderConnectionApplication } from "../ui/refresh";
+import { publicImage, type ThumbnailOptions } from "./thumbnail";
 
 let timer: ReturnType<typeof setTimeout> | null = null;
 let inFlight: Promise<CharacterSyncResult> | null = null;
@@ -35,9 +36,7 @@ export function syncCharacters(): Promise<CharacterSyncResult> {
 
 async function performCharacterSync(): Promise<CharacterSyncResult> {
   assertCredentialedGameMaster();
-  const characters = game.actors
-    .filter((actor) => actor.type === "character")
-    .map(characterProjection);
+  const characters = await withCharacterImages(game.actors.filter((actor) => actor.type === "character"));
   const response = await authenticatedRequest<SyncResponse>("/characters/sync", {
     syncId: crypto.randomUUID(),
     capturedAt: new Date().toISOString(),
@@ -50,6 +49,35 @@ async function performCharacterSync(): Promise<CharacterSyncResult> {
   });
   void renderConnectionApplication();
   return { ...response, synchronizedCharacters: characters.length };
+}
+
+/** Retrato: miniatura quadrada de 256 px, enquadrada pelo topo. */
+const PORTRAIT: ThumbnailOptions = { size: 256, maxChars: 58_000, fit: "portrait" };
+/** Token: miniatura de 128 px com a imagem inteira e fundo transparente. */
+const TOKEN: ThumbnailOptions = { size: 128, maxChars: 30_000, fit: "contain" };
+/** Soma das imagens de uma sincronização; o portal aceita até 1 500 000. */
+export const MAX_CHARACTER_IMAGE_CHARS = 1_200_000;
+
+/**
+ * Acrescenta retrato e token às projeções. Se o orçamento acabar, os demais
+ * personagens seguem sem os campos de imagem, e o portal mantém as anteriores.
+ */
+export async function withCharacterImages(actors: readonly FoundryActor[]): Promise<CharacterProjection[]> {
+  const images = await Promise.all(
+    actors.map(async (actor) => ({
+      portraitUrl: await publicImage(actor.img, PORTRAIT),
+      tokenUrl: await publicImage(actor.prototypeToken?.texture?.src, TOKEN),
+    })),
+  );
+  let budget = MAX_CHARACTER_IMAGE_CHARS;
+  return actors.map((actor, index) => {
+    const projection = characterProjection(actor);
+    const { portraitUrl, tokenUrl } = images[index]!;
+    const cost = (portraitUrl?.length ?? 0) + (tokenUrl?.length ?? 0);
+    if (cost > budget) return projection;
+    budget -= cost;
+    return { ...projection, portraitUrl, tokenUrl };
+  });
 }
 
 /** Projeção sanitizada: identidade, nível, caminhos, recursos mecânicos mínimos e moedas. */

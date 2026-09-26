@@ -75,8 +75,8 @@ expira rapidamente e nunca é mostrado depois da conexão.
 
 O módulo não sincroniza descrições, notas do mestre, inventário ou conteúdo de
 livros. Somente nome, nível, ancestralidade, caminhos, proprietários, recursos
-mecânicos mínimos e o saldo das quatro moedas (`system.wealth`) são enviados ao
-portal.
+mecânicos mínimos, o saldo das quatro moedas (`system.wealth`) e miniaturas do
+retrato e do token do personagem são enviados ao portal.
 
 ### Configurar o Mercador
 
