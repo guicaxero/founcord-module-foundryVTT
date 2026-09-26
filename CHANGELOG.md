@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.7.0 — Não lançada
+## 0.7.0 — 2026-09-25
 
 - Envia uma miniatura de 64 px do ícone de cada item do Mercador, gerada no
   navegador do mestre. O servidor do Foundry continua fora da internet.
