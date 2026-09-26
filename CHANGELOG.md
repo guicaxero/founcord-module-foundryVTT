@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.8.1 — Não lançada
+## 0.8.1 — 2026-09-26
 
 - Envia as versões do Foundry, do sistema e do módulo a cada heartbeat. O
   portal passa a reconhecer atualizações feitas depois do pareamento, o que
