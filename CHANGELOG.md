@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.9.0 — Não lançada
+## 0.9.0 — 2026-09-26
 
 - Envia o retrato (`actor.img`) e o token (`prototypeToken.texture.src`) de cada
   personagem, como miniaturas geradas no navegador do mestre: retrato de 256 px
