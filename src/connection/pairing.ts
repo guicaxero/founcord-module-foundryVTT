@@ -5,9 +5,10 @@ import type {
   WorldIdentity,
 } from "../bridge/contracts";
 import { BridgeRequestError, friendlyError } from "../bridge/errors";
-import { DEFAULT_POLL_INTERVAL_MS, MODULE_ID } from "../constants";
+import { DEFAULT_POLL_INTERVAL_MS } from "../constants";
 import { assertGameMaster, assertPrimaryGameMaster, isPrimaryGameMaster } from "../gm";
 import { localize } from "../i18n";
+import { runtimeVersions } from "./versions";
 import {
   connection,
   getSetting,
@@ -23,10 +24,6 @@ import { startBridge, stopBridge } from "./lifecycle";
 let pollTimer: ReturnType<typeof setTimeout> | null = null;
 
 const TERMINAL_PAIRING_ERRORS = new Set(["pairing_expired", "pairing_cancelled", "pairing_consumed"]);
-
-function moduleVersion(): string {
-  return game.modules.get(MODULE_ID)?.version ?? "0.0.0";
-}
 
 /** Inicia o pareamento por código temporário; a campanha é escolhida no portal. */
 export async function startPairing(): Promise<void> {
@@ -51,9 +48,7 @@ export async function startPairing(): Promise<void> {
     foundryWorldId: game.world.id,
     worldTitle: game.world.title,
     systemId: game.system.id,
-    foundryVersion: game.version,
-    systemVersion: game.system.version,
-    moduleVersion: moduleVersion(),
+    ...runtimeVersions(),
   };
   const response = await bridgeRequest<PairingCreateResponse>("/v1/pairings", {
     body: identity,

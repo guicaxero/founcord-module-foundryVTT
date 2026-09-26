@@ -40,6 +40,10 @@ export type HeartbeatRequest = Readonly<{
   observedAt: string;
   activeUsers: number;
   actorCount: number;
+  /** A partir do 0.8.1: mantêm o registro do mundo atualizado no portal. */
+  foundryVersion: string;
+  systemVersion: string;
+  moduleVersion: string;
 }>;
 
 export type HeartbeatResponse = Readonly<{
