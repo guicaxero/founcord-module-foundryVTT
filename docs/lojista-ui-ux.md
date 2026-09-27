@@ -1,4 +1,4 @@
-# Especificação de UI/UX — Mercador no Foundry
+# Especificação de UI/UX — Lojista no Foundry
 
 ## Objetivo e usuário
 
@@ -11,9 +11,9 @@ prometer compras, transferências ou edição externa do inventário.
 1. A seção aparece somente no estado conectado, depois da sincronização de
    personagens e antes da zona de desconexão.
 2. O cabeçalho explica o propósito e mantém o selo “Somente consulta”.
-3. O campo persistente “Ator do Mercador” lista atores reais em ordem alfabética
+3. O campo persistente “Ator do Lojista” lista atores reais em ordem alfabética
    e inclui a opção explícita “Nenhum ator selecionado”.
-4. “Salvar Mercador” persiste o ID exato e, quando houver seleção, dispara o
+4. “Salvar Lojista” persiste o ID exato e, quando houver seleção, dispara o
    primeiro envio.
 5. Depois da configuração, o mestre vê a fonte, o horário do último envio, a
    quantidade de itens e a ação manual “Sincronizar catálogo”.
@@ -53,7 +53,7 @@ prometer compras, transferências ou edição externa do inventário.
   em até 5 s segue sem imagem.
 - "Moeda dos preços sem moeda" fica logo abaixo do ator, com rótulo, ajuda
   associada por `aria-describedby` e as quatro moedas do sistema pelo nome.
-  O valor padrão é centavos de cobre. Salvar o Mercador grava a moeda e reenvia
+  O valor padrão é centavos de cobre. Salvar o Lojista grava a moeda e reenvia
   o catálogo.
 - Um preço só com número recebe a moeda escolhida (`22` vira `22 cp`); preços
   com moeda ou especiais seguem como escritos.

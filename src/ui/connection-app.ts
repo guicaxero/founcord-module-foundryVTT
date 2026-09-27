@@ -33,7 +33,7 @@ type Feedback = Readonly<{ type: "success" | "error"; message: string }>;
 
 const { ApplicationV2, DialogV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
-/** Tela "Gerenciar conexão": pareamento, sincronização, Mercador e diagnóstico. */
+/** Tela "Gerenciar conexão": pareamento, sincronização, Lojista e diagnóstico. */
 export class BridgeConnectionApplication extends HandlebarsApplicationMixin(ApplicationV2) {
   static DEFAULT_OPTIONS = {
     id: "ordem-foundry-connection",
@@ -182,9 +182,9 @@ export class BridgeConnectionApplication extends HandlebarsApplicationMixin(Appl
       actorId
         ? localize(
             "ORDEM_BRIDGE.Feedback.MerchantSaved",
-            "Mercador selecionado. O primeiro catálogo será sincronizado agora.",
+            "Lojista selecionado. O primeiro catálogo será sincronizado agora.",
           )
-        : localize("ORDEM_BRIDGE.Feedback.MerchantCleared", "Seleção do Mercador removida."),
+        : localize("ORDEM_BRIDGE.Feedback.MerchantCleared", "Seleção do Lojista removida."),
     );
   }
 
@@ -194,7 +194,7 @@ export class BridgeConnectionApplication extends HandlebarsApplicationMixin(Appl
       syncMerchantCatalog,
       localize(
         "ORDEM_BRIDGE.Feedback.MerchantSyncComplete",
-        "Catálogo do Mercador sincronizado com o portal.",
+        "Catálogo do Lojista sincronizado com o portal.",
       ),
     );
   }

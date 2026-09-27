@@ -17,7 +17,7 @@ o acerto manual; não transfere itens, não reduz estoque e não desconta moedas
 
 ## Estados e falhas
 
-- A mensagem é criada somente depois de revalidar o ator do Mercador, o
+- A mensagem é criada somente depois de revalidar o ator do Lojista, o
   personagem, o item, o preço e a quantidade disponível.
 - Mudança de preço, estoque insuficiente, item removido ou ator ausente falham sem
   criar uma mensagem enganosa.

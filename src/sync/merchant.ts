@@ -55,11 +55,11 @@ async function performMerchantSync(): Promise<MerchantSyncResult> {
       actorId
         ? localize(
             "ORDEM_BRIDGE.Errors.MerchantMissing",
-            "O ator escolhido como Mercador não existe mais. Selecione outro ator.",
+            "O ator escolhido como Lojista não existe mais. Selecione outro ator.",
           )
         : localize(
             "ORDEM_BRIDGE.Errors.MerchantRequired",
-            "Selecione um ator antes de sincronizar o Mercador.",
+            "Selecione um ator antes de sincronizar o Lojista.",
           ),
     );
   }
@@ -71,7 +71,7 @@ async function performMerchantSync(): Promise<MerchantSyncResult> {
     capturedAt,
     catalog: {
       merchantActorId: String(actor.id).slice(0, 128),
-      merchantName: String(actor.name ?? "").trim().slice(0, 160) || "Mercador",
+      merchantName: String(actor.name ?? "").trim().slice(0, 160) || "Lojista",
       sourceUpdatedAt: documentUpdatedAt(actor),
       items,
     },
@@ -96,7 +96,7 @@ export async function saveMerchantActor(actorId: string, defaultCoin?: MerchantC
     throw new Error(
       localize(
         "ORDEM_BRIDGE.Errors.MerchantMissing",
-        "O ator escolhido como Mercador não existe mais. Selecione outro ator.",
+        "O ator escolhido como Lojista não existe mais. Selecione outro ator.",
       ),
     );
   }
