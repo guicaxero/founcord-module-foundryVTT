@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.10.1 — Não lançada
+## 0.10.1 — 2026-09-27
 
 - O ator que representa a loja passa a se chamar **Lojista** em todos os textos
   do módulo (tela de conexão, avisos e erros), como no portal. Configurações
