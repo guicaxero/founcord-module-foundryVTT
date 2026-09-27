@@ -64,7 +64,7 @@ expira rapidamente e nunca é mostrado depois da conexão.
 - polling de comandos adaptativo: 5 segundos após receber comandos, dobrando a
   cada ciclo vazio até 30 segundos, com backoff em falhas;
 - sincronização integral dos personagens ao iniciar e após alterações;
-- catálogo somente leitura do ator escolhido como Mercador, atualizado ao
+- catálogo somente leitura do ator escolhido como Lojista, atualizado ao
   iniciar e depois de alterações no ator ou em seus itens;
 - pedidos assistidos do portal revalidados no mundo e notificados somente aos
   mestres, sem movimentação automática de moedas, estoque ou inventário;
@@ -78,11 +78,11 @@ livros. Somente nome, nível, ancestralidade, caminhos, proprietários, recursos
 mecânicos mínimos, o saldo das quatro moedas (`system.wealth`) e miniaturas do
 retrato e do token do personagem são enviados ao portal.
 
-### Configurar o Mercador
+### Configurar o Lojista
 
 Com o mundo conectado, abra **Gerenciar conexão**, localize a seção
-**Mercador**, escolha o ator que representa o estoque e selecione **Salvar
-Mercador**. O primeiro catálogo é enviado imediatamente. Alterações futuras no
+**Lojista**, escolha o ator que representa o estoque e selecione **Salvar
+Lojista**. O primeiro catálogo é enviado imediatamente. Alterações futuras no
 ator e em seus itens agendam novas sincronizações; o mestre também pode usar
 **Sincronizar catálogo**.
 
@@ -97,7 +97,7 @@ número recebem a moeda escolhida em **Moeda dos preços sem moeda**.
 
 No painel do portal, **Estoque do Lojista** sorteia itens do catálogo da
 campanha. Ao confirmar o envio, o módulo recebe o comando
-`merchant.stock.replace` e cria os itens no ator do Mercador. Só os itens de
+`merchant.stock.replace` e cria os itens no ator do Lojista. Só os itens de
 sorteios anteriores são substituídos (eles levam uma marca do módulo); o que o
 mestre colocou à mão continua no ator. Reenviar o mesmo sorteio não duplica
 itens. Sem o mestre conectado, o envio espera na fila do Bridge.

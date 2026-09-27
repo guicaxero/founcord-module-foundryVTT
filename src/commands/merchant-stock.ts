@@ -123,7 +123,7 @@ export async function replaceMerchantStock(payload: MerchantStockReplacePayload)
     throw new Error(
       localize(
         "ORDEM_BRIDGE.Errors.StockMerchantMissing",
-        "Nenhum ator está configurado como Lojista neste mundo. Escolha o Mercador na tela de conexão e reenvie o estoque.",
+        "Nenhum ator está configurado como Lojista neste mundo. Escolha o Lojista na tela de conexão e reenvie o estoque.",
       ),
     );
   }

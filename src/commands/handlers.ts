@@ -46,7 +46,7 @@ export async function executeCommand(command: BridgeCommand): Promise<CommandRes
 }
 
 /**
- * Revalida Mercador, personagem, item, preço e estoque no mundo e avisa os
+ * Revalida Lojista, personagem, item, preço e estoque no mundo e avisa os
  * mestres por sussurro. Nenhuma moeda, item ou quantidade é alterada.
  */
 async function createMerchantPurchaseNotification(
@@ -57,7 +57,7 @@ async function createMerchantPurchaseNotification(
     throw new Error(
       localize(
         "ORDEM_BRIDGE.Errors.PurchaseMerchantChanged",
-        "O Mercador configurado mudou. Atualize o catálogo antes de reenviar o pedido.",
+        "O Lojista configurado mudou. Atualize o catálogo antes de reenviar o pedido.",
       ),
     );
   }
@@ -75,7 +75,7 @@ async function createMerchantPurchaseNotification(
     throw new Error(
       localize(
         "ORDEM_BRIDGE.Errors.PurchaseItemMissing",
-        "O item solicitado não está mais no estoque do Mercador.",
+        "O item solicitado não está mais no estoque do Lojista.",
       ),
     );
   }

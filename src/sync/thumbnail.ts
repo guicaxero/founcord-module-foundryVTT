@@ -42,7 +42,7 @@ export function publicImage(img: unknown, options: ThumbnailOptions): Promise<st
   return pending;
 }
 
-/** Ícone de item do Mercador: miniatura de 64 px. */
+/** Ícone de item do Lojista: miniatura de 64 px. */
 export function itemImage(img: unknown): Promise<string | null> {
   return publicImage(img, ITEM_THUMBNAIL);
 }
