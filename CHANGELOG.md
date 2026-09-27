@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.10.0 — Não lançada
+## 0.10.0 — 2026-09-27
 
 - Recebe as criaturas montadas no portal (`creature.upsert`) e cria o ator do
   tipo criatura na pasta "Ordem — Criaturas", com atributos, características,
