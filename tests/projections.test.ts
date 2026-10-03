@@ -37,7 +37,9 @@ describe("characterProjection", () => {
       update: async () => undefined,
     };
 
-    expect(characterProjection(actor)).toEqual({
+    const { sheet, ...summary } = characterProjection(actor);
+    expect(sheet?.inventory).toEqual([]);
+    expect(summary).toEqual({
       actorId: "actor1",
       name: "Aster",
       type: "character",

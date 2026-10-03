@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.11.0 — Não lançada
+
+- Envia a ficha completa de cada personagem para a área do jogador no portal:
+  atributos, características (Defesa, Velocidade, Poder, Tamanho, Fortuna),
+  aparência, religião, inventário (com quantidade e se está equipado), magias
+  (com conjurações), talentos (com usos), ancestralidade, profissões, idiomas
+  e a descrição do personagem.
+- Descrições seguem como texto simples, sem trechos secretos, e são cortadas
+  quando a ficha passa do limite.
+- Alterar um item de um personagem também dispara a sincronização.
+- Requer o portal com a ficha do jogador.
+
 ## 0.10.1 — 2026-09-27
 
 - O ator que representa a loja passa a se chamar **Lojista** em todos os textos

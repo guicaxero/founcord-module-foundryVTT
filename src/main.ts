@@ -70,6 +70,8 @@ for (const event of ["createActor", "updateActor", "deleteActor"]) {
 for (const event of ["createItem", "updateItem", "deleteItem"]) {
   Hooks.on(event, (item: FoundryItem) => {
     if (item?.parent?.id === merchantActorId()) scheduleMerchantSync();
+    // A ficha do portal inclui inventário, magias e talentos.
+    if (item?.parent?.type === "character") scheduleCharacterSync();
   });
 }
 

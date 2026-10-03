@@ -63,7 +63,8 @@ expira rapidamente e nunca é mostrado depois da conexão.
   derivado após 150 segundos sem heartbeat;
 - polling de comandos adaptativo: 5 segundos após receber comandos, dobrando a
   cada ciclo vazio até 30 segundos, com backoff em falhas;
-- sincronização integral dos personagens ao iniciar e após alterações;
+- sincronização integral dos personagens ao iniciar e após alterações no ator
+  ou nos itens dele;
 - catálogo somente leitura do ator escolhido como Lojista, atualizado ao
   iniciar e depois de alterações no ator ou em seus itens;
 - pedidos assistidos do portal revalidados no mundo e notificados somente aos
@@ -73,10 +74,14 @@ expira rapidamente e nunca é mostrado depois da conexão.
 - o navegador do mestre que concluiu o pareamento mantém a conexão; outro
   mestre pode iniciar um novo pareamento quando necessário.
 
-O módulo não sincroniza descrições, notas do mestre, inventário ou conteúdo de
-livros. Somente nome, nível, ancestralidade, caminhos, proprietários, recursos
-mecânicos mínimos, o saldo das quatro moedas (`system.wealth`) e miniaturas do
-retrato e do token do personagem são enviados ao portal.
+Para a área do jogador, cada personagem leva a ficha completa: atributos,
+características, aparência, religião, inventário, magias, talentos, raízes
+(ancestralidade, profissões e idiomas) e a descrição do personagem, além do
+saldo das quatro moedas (`system.wealth`) e das miniaturas do retrato e do
+token. Descrições viajam como texto simples, sem trechos secretos (`.secret`,
+conteúdo de mestre) nem HTML, e são cortadas para caber no limite do portal.
+A ficha só aparece para o jogador vinculado ao personagem. Notas do mestre,
+flags e caminhos de arquivo não são enviados.
 
 ### Configurar o Lojista
 

@@ -87,7 +87,66 @@ export type CharacterProjection = Readonly<{
    */
   portraitUrl?: string | null;
   tokenUrl?: string | null;
+  /** Ficha completa (0.11.0+), espelhando `CharacterSheetSchema` de @ordem/contracts. */
+  sheet?: CharacterSheet;
   sourceUpdatedAt: string;
+}>;
+
+type Resource = Readonly<{ value: number | null; max: number | null }>;
+
+export type CharacterSheetInventoryItem = Readonly<{
+  id: string;
+  name: string;
+  description: string;
+  type: "weapon" | "armor" | "item" | "ammo" | "relic";
+  quantity: number;
+  equipped: boolean;
+  price: string | null;
+  availability: string | null;
+  properties: string | null;
+  damage: string | null;
+  hands: string | null;
+  defense: string | null;
+  consumableType: string | null;
+}>;
+
+export type CharacterSheetSpell = Readonly<{
+  id: string;
+  name: string;
+  description: string;
+  tradition: string | null;
+  rank: number;
+  spellType: "attack" | "utility" | null;
+  attribute: string | null;
+  castings: Resource;
+  target: string | null;
+  area: string | null;
+  duration: string | null;
+}>;
+
+export type CharacterSheetTalent = Readonly<{
+  id: string;
+  name: string;
+  description: string;
+  kind: "talent" | "feature" | "specialaction";
+  group: string | null;
+  uses: Resource;
+}>;
+
+export type CharacterSheet = Readonly<{
+  attributes: Readonly<Record<"strength" | "agility" | "intellect" | "will" | "perception", number>>;
+  characteristics: Readonly<{ defense: number; speed: number; power: number; size: string | null; fortune: number }>;
+  appearance: Readonly<Record<"age" | "sex" | "eyes" | "hair" | "height" | "weight" | "feature", string | null>>;
+  religion: string | null;
+  inventory: readonly CharacterSheetInventoryItem[];
+  spells: readonly CharacterSheetSpell[];
+  talents: readonly CharacterSheetTalent[];
+  roots: Readonly<{
+    ancestry: Readonly<{ name: string; description: string }> | null;
+    professions: readonly Readonly<{ name: string; description: string }>[];
+    languages: readonly Readonly<{ name: string; speak: boolean; read: boolean; write: boolean }>[];
+  }>;
+  notes: Readonly<{ text: string; revision: string }>;
 }>;
 
 export type SyncResponse = Readonly<{
