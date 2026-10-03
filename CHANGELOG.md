@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.11.0 — Não lançada
+## 0.11.0 — 2026-10-03
 
 - Envia a ficha completa de cada personagem para a área do jogador no portal:
   atributos, características (Defesa, Velocidade, Poder, Tamanho, Fortuna),
