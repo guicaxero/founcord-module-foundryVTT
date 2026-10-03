@@ -289,6 +289,17 @@ export type CreatureUpsertPayload = Readonly<{
   requestedAt: string;
 }>;
 
+/** Anotações do personagem editadas no portal (`character.notes.update`). */
+export type CharacterNotesUpdatePayload = Readonly<{
+  updateId: string;
+  campaignId: string;
+  actorId: string;
+  text: string;
+  revision: string;
+  requestedBy: string;
+  requestedAt: string;
+}>;
+
 export type MerchantPurchasePayload = Readonly<{
   requestId: string;
   campaignId: string;
@@ -330,6 +341,7 @@ export type BridgeCommand = CommandEnvelope &
     | Readonly<{ type: "merchant.purchase.request"; payload: MerchantPurchasePayload }>
     | Readonly<{ type: "merchant.stock.replace"; payload: MerchantStockReplacePayload }>
     | Readonly<{ type: "creature.upsert"; payload: CreatureUpsertPayload }>
+    | Readonly<{ type: "character.notes.update"; payload: CharacterNotesUpdatePayload }>
   );
 
 export type CommandPollResponse = Readonly<{ commands?: readonly BridgeCommand[] }>;

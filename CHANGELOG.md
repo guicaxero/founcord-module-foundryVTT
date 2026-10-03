@@ -10,6 +10,10 @@
 - Descrições seguem como texto simples, sem trechos secretos, e são cortadas
   quando a ficha passa do limite.
 - Alterar um item de um personagem também dispara a sincronização.
+- Grava as anotações que o jogador edita no portal (`character.notes.update`)
+  na descrição do personagem, em parágrafos escapados. Se a descrição mudou no
+  Foundry desde a versão que o jogador viu, nada é gravado e o portal pede para
+  recarregar.
 - Requer o portal com a ficha do jogador.
 
 ## 0.10.1 — 2026-09-27

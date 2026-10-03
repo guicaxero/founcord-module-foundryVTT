@@ -117,6 +117,15 @@ características e os itens criados pelo portal são substituídos, e itens
 colocados à mão continuam. Nenhuma macro ou código é executado, e as
 descrições chegam como texto simples.
 
+### Anotações do jogador
+
+Na área do jogador, quem tem um personagem vinculado edita as anotações do
+personagem, que são a descrição mostrada na ficha. O módulo recebe o comando
+`character.notes.update`, confere se a descrição ainda é a mesma que o jogador
+viu e grava o texto em parágrafos simples. Se alguém mudou a descrição no
+Foundry nesse meio-tempo, nada é gravado e o portal avisa o jogador. Nenhum
+outro campo da ficha é alterado pelo portal.
+
 Pedidos feitos no portal aparecem como sussurros para os mestres depois que o
 módulo revalida personagem, item, preço e estoque. Eles continuam sendo pedidos:
 o mestre realiza o acerto no Foundry e registra a decisão no portal. Esta versão
