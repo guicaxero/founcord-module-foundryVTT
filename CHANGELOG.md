@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.12.0 — Não lançada
+
+- Entrega no personagem os itens que o jogador escolheu com o Lojista na Vida
+  na Sede (`character.items.grant`), no formato do sistema (nome, tipo, ícone,
+  preço, quantidade e dados de arma ou armadura).
+- Cada item leva a marca da atividade: reenviar a mesma entrega não duplica
+  nada.
+- Valida os itens antes de tocar no ator: só os campos do contrato e ícones de
+  caminhos do Foundry.
+- Requer o portal com a Vida na Sede.
+
 ## 0.11.0 — 2026-10-03
 
 - Envia a ficha completa de cada personagem para a área do jogador no portal:

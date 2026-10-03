@@ -45,10 +45,20 @@ function text(value: unknown, max: number, field: string): string | null {
  */
 export function validateStockPayload(payload: MerchantStockReplacePayload): readonly MerchantStockEntry[] {
   if (typeof payload?.drawId !== "string" || !payload.drawId) throw invalid("drawId");
-  if (!Array.isArray(payload.items) || payload.items.length === 0 || payload.items.length > MAX_ITEMS) {
+  return validateCatalogEntries(payload.items, MAX_ITEMS);
+}
+
+/** Itens do catálogo do portal: só os campos e valores do contrato passam. */
+export function validateCatalogEntries(
+  items: readonly MerchantStockEntry[] | undefined,
+  max: number,
+  invalidError: (detail: string) => Error = invalid,
+): readonly MerchantStockEntry[] {
+  const invalid = invalidError;
+  if (!Array.isArray(items) || items.length === 0 || items.length > max) {
     throw invalid("items");
   }
-  return payload.items.map((entry, index) => {
+  return items.map((entry, index) => {
     const field = (name: string) => `items[${index}].${name}`;
     const name = text(entry.name, 160, field("name"));
     if (!name) throw invalid(field("name"));
@@ -85,6 +95,11 @@ export function validateStockPayload(payload: MerchantStockReplacePayload): read
 
 /** Documento de item no formato do sistema Demon Lord. */
 export function stockItemData(entry: MerchantStockEntry, drawId: string): Record<string, unknown> {
+  return catalogItemData(entry, { generatedBy: GENERATED_BY, drawId, catalogItemId: entry.catalogItemId });
+}
+
+/** Item do catálogo do portal no formato do sistema, com as marcas do módulo. */
+export function catalogItemData(entry: MerchantStockEntry, flags: Readonly<Record<string, unknown>>): Record<string, unknown> {
   const escape = (value: string) => foundry.utils.escapeHTML(value);
   const requirement = entry.requirement
     ? { attribute: entry.requirement.attribute, minvalue: entry.requirement.minimum }
@@ -107,7 +122,7 @@ export function stockItemData(entry: MerchantStockEntry, drawId: string): Record
     type: entry.kind,
     ...(entry.icon ? { img: entry.icon } : {}),
     system,
-    flags: { [MODULE_ID]: { generatedBy: GENERATED_BY, drawId, catalogItemId: entry.catalogItemId } },
+    flags: { [MODULE_ID]: flags },
   };
 }
 
