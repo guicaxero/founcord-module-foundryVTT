@@ -300,6 +300,15 @@ export type CharacterNotesUpdatePayload = Readonly<{
   requestedAt: string;
 }>;
 
+/** Itens da Vida na Sede para o personagem (`character.items.grant`). */
+export type CharacterItemsGrantPayload = Readonly<{
+  grantId: string;
+  campaignId: string;
+  actorId: string;
+  items: readonly MerchantStockEntry[];
+  requestedAt: string;
+}>;
+
 export type MerchantPurchasePayload = Readonly<{
   requestId: string;
   campaignId: string;
@@ -342,6 +351,7 @@ export type BridgeCommand = CommandEnvelope &
     | Readonly<{ type: "merchant.stock.replace"; payload: MerchantStockReplacePayload }>
     | Readonly<{ type: "creature.upsert"; payload: CreatureUpsertPayload }>
     | Readonly<{ type: "character.notes.update"; payload: CharacterNotesUpdatePayload }>
+    | Readonly<{ type: "character.items.grant"; payload: CharacterItemsGrantPayload }>
   );
 
 export type CommandPollResponse = Readonly<{ commands?: readonly BridgeCommand[] }>;

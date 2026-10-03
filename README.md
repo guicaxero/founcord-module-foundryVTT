@@ -117,6 +117,13 @@ características e os itens criados pelo portal são substituídos, e itens
 colocados à mão continuam. Nenhuma macro ou código é executado, e as
 descrições chegam como texto simples.
 
+### Itens da Vida na Sede
+
+Na atividade Preparar Suprimentos da Vida na Sede, o jogador escolhe no portal
+itens Comuns do Lojista até um limite de valor. Quando o Guardião registra o
+resultado, o módulo recebe o comando `character.items.grant` e cria os itens no
+personagem. Cada item leva a marca da atividade, e reenviar não duplica nada.
+
 ### Anotações do jogador
 
 Na área do jogador, quem tem um personagem vinculado edita as anotações do

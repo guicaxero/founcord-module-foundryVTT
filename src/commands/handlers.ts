@@ -4,6 +4,7 @@ import { nullableLongText, nullableQuantity } from "../sanitize";
 import { merchantActorId, merchantDefaultCoin } from "../settings";
 import { syncCharacters } from "../sync/characters";
 import { merchantPrice } from "../sync/merchant-item";
+import { grantCharacterItems } from "./character-items";
 import { updateCharacterNotes } from "./character-notes";
 import { upsertCreature } from "./creatures";
 import { replaceMerchantStock } from "./merchant-stock";
@@ -39,6 +40,8 @@ export async function executeCommand(command: BridgeCommand): Promise<CommandRes
       return upsertCreature(command.payload);
     case "character.notes.update":
       return updateCharacterNotes(command.payload);
+    case "character.items.grant":
+      return grantCharacterItems(command.payload);
     default: {
       const unsupported: never = command;
       throw new Error(
