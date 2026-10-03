@@ -5,6 +5,7 @@ import { assertCredentialedGameMaster, isCredentialedGameMaster } from "../gm";
 import { nullableText, safeInteger } from "../sanitize";
 import { setSettings } from "../settings";
 import { renderConnectionApplication } from "../ui/refresh";
+import { characterSheet } from "./character-sheet";
 import { publicImage, type ThumbnailOptions } from "./thumbnail";
 
 let timer: ReturnType<typeof setTimeout> | null = null;
@@ -105,6 +106,7 @@ export function characterProjection(actor: FoundryActor): CharacterProjection {
       corruption: safeInteger(characteristicValue(characteristics.corruption)),
     },
     wealth: coinPurse(system.wealth),
+    sheet: characterSheet(actor),
     sourceUpdatedAt: new Date(
       Number.isFinite(modifiedTime) ? modifiedTime : Date.now(),
     ).toISOString(),

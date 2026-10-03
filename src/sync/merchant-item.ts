@@ -53,6 +53,11 @@ function code(value: unknown): string {
   return typeof value === "string" ? value.trim().toUpperCase() : "";
 }
 
+/** Tipo de consumível do sistema (`P`, `F`…) pelo nome do contrato (`potion`, `food`…). */
+export function consumableType(value: unknown): MerchantItemProjection["consumableType"] {
+  return CONSUMABLE[code(value)] ?? null;
+}
+
 function shortStat(value: unknown): string | null {
   return nullableLongText(value, 40);
 }
