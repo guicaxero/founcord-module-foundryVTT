@@ -130,5 +130,7 @@
   "ORDEM_BRIDGE.Errors.StockInvalid": "O estoque recebido do portal é inválido.",
   "ORDEM_BRIDGE.Errors.StockMerchantMissing": "Nenhum ator está configurado como Lojista neste mundo. Escolha o Lojista na tela de conexão e reenvie o estoque.",
   "ORDEM_BRIDGE.Errors.CreatureInvalid": "A criatura recebida do portal é inválida.",
-  "ORDEM_BRIDGE.Errors.CreatureNotCreated": "O Foundry não criou o ator da criatura."
+  "ORDEM_BRIDGE.Errors.CreatureNotCreated": "O Foundry não criou o ator da criatura.",
+  "ORDEM_BRIDGE.Errors.NotesInvalid": "As anotações recebidas do portal são inválidas.",
+  "ORDEM_BRIDGE.Errors.NotesActorMissing": "O personagem vinculado não está disponível neste mundo."
 }
