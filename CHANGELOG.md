@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.12.0 — Não lançada
+## 0.12.0 — 2026-10-04
 
 - Entrega no personagem os itens que o jogador escolheu com o Lojista na Vida
   na Sede (`character.items.grant`), no formato do sistema (nome, tipo, ícone,
