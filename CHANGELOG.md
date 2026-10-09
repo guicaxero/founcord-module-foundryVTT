@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.13.0 — Não lançada
+## 0.13.0 — 2026-10-09
 
 - Arrastar ao Lojista um item que ele já tem (mesmo nome e tipo) soma à
   quantidade em vez de criar uma cópia, inclusive armas. A opção **Lojista:
