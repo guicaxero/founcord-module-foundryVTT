@@ -18,6 +18,7 @@ import {
   merchantItemProjection,
   type MerchantCoin,
 } from "./merchant-item";
+import { mergeMerchantDuplicates } from "./merchant-stacking";
 import { MAX_CATALOG_THUMBNAIL_CHARS, itemImage } from "./thumbnail";
 
 let timer: ReturnType<typeof setTimeout> | null = null;
@@ -64,6 +65,8 @@ async function performMerchantSync(): Promise<MerchantSyncResult> {
     );
   }
 
+  // Cópias do mesmo item viram uma linha só, com a soma; a exclusão agenda outra sincronização.
+  if ((await mergeMerchantDuplicates(actor)) > 0) cancelMerchantSync();
   const capturedAt = new Date().toISOString();
   const items = await merchantItems([...(actor.items ?? [])].slice(0, MAX_MERCHANT_ITEMS));
   const response = await authenticatedRequest<SyncResponse>("/merchant/sync", {

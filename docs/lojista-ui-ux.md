@@ -57,3 +57,35 @@ prometer compras, transferências ou edição externa do inventário.
   o catálogo.
 - Um preço só com número recebe a moeda escolhida (`22` vira `22 cp`); preços
   com moeda ou especiais seguem como escritos.
+
+## Itens repetidos (0.13.0)
+
+- **Usuário:** mestre que monta o estoque do Lojista arrastando itens.
+- **Problema:** a ficha do sistema não mostra quantidade em armas; arrastar a
+  mesma arma de novo criava uma cópia, e o portal listava as duas como itens
+  diferentes.
+- **Comportamento:** com "Lojista: somar itens repetidos" (configuração de
+  mundo nas configurações do módulo, ligada por padrão), arrastar um item com
+  o mesmo tipo e o mesmo nome (sem diferenciar acento e caixa) soma a
+  quantidade do item arrastado no item que já existe. A cópia não é criada.
+- **Feedback:** notificação informativa "{nome}: +{quantidade} no estoque do
+  Lojista.", traduzida em pt-BR e en.
+- **Escopo:** só no ator configurado como Lojista e só para o mestre que
+  arrastou; itens criados pelo portal seguem o comando que os criou.
+- **Cópias antigas:** juntadas na próxima sincronização, pelo mestre conector:
+  fica a mais antiga, com a soma. Itens do portal e itens à mão não se
+  misturam, para o sorteio continuar trocando só o que é do portal.
+
+### Critérios de aceitação
+
+- Arrastar duas vezes a mesma arma resulta em um item com quantidade 2 e uma
+  notificação a cada soma.
+- Arrastar um item do portal já existente o transforma em "colocado à mão".
+- Desligar a opção volta ao comportamento do Foundry (cria a cópia).
+- Jogadores e outros atores não são afetados.
+
+### Pendência aceita
+
+- A validação no Foundry real (arrastar do compêndio e da barra de itens,
+  teclado e notificação) fica com o mestre ao instalar a 0.13.0; os testes
+  automatizados cobrem a regra com documentos sintéticos.

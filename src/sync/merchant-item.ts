@@ -4,6 +4,7 @@ import type {
   MerchantRequirement,
   MerchantWeaponDetails,
 } from "../bridge/contracts";
+import { isPortalItem, portalCatalogItemId } from "./merchant-flags";
 import {
   documentUpdatedAt,
   nullableLongText,
@@ -116,6 +117,8 @@ export function merchantItemProjection(
     properties: nullableLongText(item.system?.properties, 500),
     weapon: weaponDetails(item),
     armor: armorDetails(item),
+    origin: isPortalItem(item) ? "portal" : "manual",
+    catalogItemId: portalCatalogItemId(item),
     sourceUpdatedAt: documentUpdatedAt(item),
   };
 }

@@ -9,6 +9,7 @@ import { localize } from "./i18n";
 import { connection, merchantActorId, pairing, registerSettings } from "./settings";
 import { scheduleCharacterSync, syncCharacters } from "./sync/characters";
 import { scheduleMerchantSync, syncMerchantCatalog } from "./sync/merchant";
+import { stackOnCreate } from "./sync/merchant-stacking";
 import { BridgeConnectionApplication } from "./ui/connection-app";
 import { renderConnectionApplication } from "./ui/refresh";
 import { publicStatus } from "./ui/status";
@@ -66,6 +67,11 @@ for (const event of ["createActor", "updateActor", "deleteActor"]) {
     }
   });
 }
+
+// Arrastar ao Lojista um item que ele já tem soma à quantidade, sem criar cópia.
+Hooks.on("preCreateItem", (item: FoundryItem, data: Readonly<Record<string, unknown>>, _options: unknown, userId: string) =>
+  stackOnCreate(item, data, userId),
+);
 
 for (const event of ["createItem", "updateItem", "deleteItem"]) {
   Hooks.on(event, (item: FoundryItem) => {

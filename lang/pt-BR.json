@@ -133,5 +133,9 @@
   "ORDEM_BRIDGE.Errors.CreatureNotCreated": "O Foundry não criou o ator da criatura.",
   "ORDEM_BRIDGE.Errors.NotesInvalid": "As anotações recebidas do portal são inválidas.",
   "ORDEM_BRIDGE.Errors.NotesActorMissing": "O personagem vinculado não está disponível neste mundo.",
-  "ORDEM_BRIDGE.Errors.GrantInvalid": "Os itens recebidos do portal são inválidos."
+  "ORDEM_BRIDGE.Errors.GrantInvalid": "Os itens recebidos do portal são inválidos.",
+  "ORDEM_BRIDGE.Settings.merchantStackDuplicates.Name": "Lojista: somar itens repetidos",
+  "ORDEM_BRIDGE.Settings.merchantStackDuplicates.Hint": "Arrastar ao Lojista um item que ele já tem (mesmo nome e tipo) soma à quantidade em vez de criar uma cópia. Cópias que já existem são juntadas na próxima sincronização.",
+  "ORDEM_BRIDGE.Notifications.MerchantStacked": "{name}: +{amount} no estoque do Lojista.",
+  "ORDEM_BRIDGE.Errors.StockPatchInvalid": "A edição de estoque recebida do portal é inválida."
 }

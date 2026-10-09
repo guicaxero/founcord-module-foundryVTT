@@ -12,6 +12,7 @@ function actor(overrides: Partial<FoundryActor>): FoundryActor {
     items: collection([]),
     createEmbeddedDocuments: async () => [],
     deleteEmbeddedDocuments: async () => [],
+    updateEmbeddedDocuments: async () => [],
     update: async () => undefined,
     ...overrides,
   };

@@ -7,7 +7,7 @@ import { merchantPrice } from "../sync/merchant-item";
 import { grantCharacterItems } from "./character-items";
 import { updateCharacterNotes } from "./character-notes";
 import { upsertCreature } from "./creatures";
-import { replaceMerchantStock } from "./merchant-stock";
+import { patchMerchantStock, replaceMerchantStock } from "./merchant-stock";
 
 /**
  * Executa somente os tipos de comando do contrato. Nenhum código ou macro
@@ -36,6 +36,8 @@ export async function executeCommand(command: BridgeCommand): Promise<CommandRes
       return createMerchantPurchaseNotification(command.payload);
     case "merchant.stock.replace":
       return replaceMerchantStock(command.payload);
+    case "merchant.stock.patch":
+      return patchMerchantStock(command.payload);
     case "creature.upsert":
       return upsertCreature(command.payload);
     case "character.notes.update":

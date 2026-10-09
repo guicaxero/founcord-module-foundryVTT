@@ -133,5 +133,9 @@
   "ORDEM_BRIDGE.Errors.CreatureNotCreated": "Foundry did not create the creature actor.",
   "ORDEM_BRIDGE.Errors.NotesInvalid": "The notes received from the portal are invalid.",
   "ORDEM_BRIDGE.Errors.NotesActorMissing": "The linked character is not available in this world.",
-  "ORDEM_BRIDGE.Errors.GrantInvalid": "The items received from the portal are invalid."
+  "ORDEM_BRIDGE.Errors.GrantInvalid": "The items received from the portal are invalid.",
+  "ORDEM_BRIDGE.Settings.merchantStackDuplicates.Name": "Lojista: stack repeated items",
+  "ORDEM_BRIDGE.Settings.merchantStackDuplicates.Hint": "Dropping an item the Lojista already has (same name and type) adds to its quantity instead of creating a copy. Existing copies are merged on the next sync.",
+  "ORDEM_BRIDGE.Notifications.MerchantStacked": "{name}: +{amount} in the Lojista stock.",
+  "ORDEM_BRIDGE.Errors.StockPatchInvalid": "The stock edit received from the portal is invalid."
 }

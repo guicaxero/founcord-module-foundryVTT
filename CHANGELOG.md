@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.13.0 — Não lançada
+
+- Arrastar ao Lojista um item que ele já tem (mesmo nome e tipo) soma à
+  quantidade em vez de criar uma cópia, inclusive armas. A opção **Lojista:
+  somar itens repetidos** fica nas configurações do módulo, ligada por padrão.
+- Cópias que já existiam no Lojista são juntadas na sincronização: fica o item
+  mais antigo, com a soma. Itens do portal e itens à mão não se misturam.
+- Recebe a edição do estoque feita no portal (`merchant.stock.patch`): muda a
+  quantidade de qualquer item, remove e acrescenta itens do catálogo, sem
+  trocar o resto. Quantidade que mudou no Foundry depois da leitura não é
+  sobrescrita; reenviar a mesma edição não repete nada.
+- O catálogo enviado ao portal indica se cada item veio do portal ou foi
+  colocado à mão, e de qual item do catálogo ele veio.
+- Requer o portal com a edição do Estoque atual (o portal precisa ser
+  atualizado antes do módulo).
+
 ## 0.12.0 — 2026-10-04
 
 - Entrega no personagem os itens que o jogador escolheu com o Lojista na Vida

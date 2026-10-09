@@ -29,6 +29,7 @@ function actor(items: FoundryItem[], system: Record<string, unknown> = {}): Foun
     } as DemonLordActorSystem,
     createEmbeddedDocuments: async () => [],
     deleteEmbeddedDocuments: async () => [],
+    updateEmbeddedDocuments: async () => [],
     update: async () => undefined,
   };
 }

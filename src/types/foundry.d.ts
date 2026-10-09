@@ -106,6 +106,10 @@ declare global {
       data: readonly Readonly<Record<string, unknown>>[],
     ): Promise<readonly FoundryItem[]>;
     deleteEmbeddedDocuments(embeddedName: "Item", ids: readonly string[]): Promise<unknown>;
+    updateEmbeddedDocuments(
+      embeddedName: "Item",
+      updates: readonly Readonly<Record<string, unknown>>[],
+    ): Promise<readonly FoundryItem[]>;
   }
 
   interface FoundryFolder {
@@ -153,6 +157,8 @@ declare global {
   }
 
   interface SettingRegistration {
+    name?: string;
+    hint?: string;
     scope: "world" | "client";
     config: boolean;
     restricted: boolean;

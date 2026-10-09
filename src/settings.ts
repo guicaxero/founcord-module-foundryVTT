@@ -28,6 +28,7 @@ type ModuleSettings = {
   lastSyncCount: number;
   merchantActorId: string;
   merchantDefaultCoin: string;
+  merchantStackDuplicates: boolean;
   lastMerchantSyncAt: string;
   lastMerchantSyncCount: number;
   pendingChatEvents: readonly ChatEntry[];
@@ -38,8 +39,10 @@ export type SettingKey = keyof ModuleSettings;
 
 type SettingDefinition<K extends SettingKey> = Readonly<{
   scope: "world" | "client";
-  type: StringConstructor | NumberConstructor | ObjectConstructor;
+  type: StringConstructor | NumberConstructor | ObjectConstructor | BooleanConstructor;
   default: ModuleSettings[K];
+  /** Aparece nas configurações do módulo, com nome e dica traduzidos. */
+  visible?: boolean;
 }>;
 
 const definitions: { [K in SettingKey]: SettingDefinition<K> } = {
@@ -61,6 +64,8 @@ const definitions: { [K in SettingKey]: SettingDefinition<K> } = {
   merchantActorId: { scope: "world", type: String, default: "" },
   // Moeda aplicada a preços digitados só com número, como `22`.
   merchantDefaultCoin: { scope: "world", type: String, default: "cp" },
+  // Arrastar ao Lojista um item que ele já tem soma à quantidade.
+  merchantStackDuplicates: { scope: "world", type: Boolean, default: true, visible: true },
   lastMerchantSyncAt: { scope: "world", type: String, default: "" },
   lastMerchantSyncCount: { scope: "world", type: Number, default: 0 },
   pendingChatEvents: { scope: "world", type: Object, default: [] },
@@ -78,8 +83,11 @@ export function registerSettings(connectionMenu: unknown): void {
   });
   for (const [key, definition] of Object.entries(definitions)) {
     game.settings.register(MODULE_ID, key, {
+      ...(definition.visible
+        ? { name: `ORDEM_BRIDGE.Settings.${key}.Name`, hint: `ORDEM_BRIDGE.Settings.${key}.Hint` }
+        : {}),
       scope: definition.scope,
-      config: false,
+      config: definition.visible === true,
       restricted: definition.scope === "world",
       type: definition.type,
       default: definition.default,
@@ -111,6 +119,10 @@ export function bridgeUrl(): string {
 export function merchantDefaultCoin(): MerchantCoin {
   const coin = String(getSetting("merchantDefaultCoin") ?? "").trim();
   return isMerchantCoin(coin) ? coin : "cp";
+}
+
+export function merchantStackDuplicates(): boolean {
+  return getSetting("merchantStackDuplicates") !== false;
 }
 
 export function merchantActorId(): string {
