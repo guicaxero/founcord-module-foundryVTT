@@ -175,7 +175,7 @@ export async function replaceMerchantStock(payload: MerchantStockReplacePayload)
 }
 
 const MAX_PATCH_OPERATIONS = 100;
-const FOUNDRY_ID = /^[A-Za-z0-9_-]{1,128}$/u;
+const FOUNDRY_ID = /^[A-Za-z0-9._-]{1,128}$/u;
 
 function invalidPatch(detail: string): Error {
   return new Error(
