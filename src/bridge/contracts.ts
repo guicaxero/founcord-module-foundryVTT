@@ -189,6 +189,10 @@ export type MerchantItemProjection = Readonly<{
   properties: string | null;
   weapon: MerchantWeaponDetails | null;
   armor: MerchantArmorDetails | null;
+  /** `portal` quando o item foi criado pelo portal e ainda é trocado no sorteio (0.13.0+). */
+  origin: "portal" | "manual";
+  /** Item do catálogo do portal que gerou o item; `null` nos colocados à mão (0.13.0+). */
+  catalogItemId: string | null;
   sourceUpdatedAt: string;
 }>;
 
@@ -227,6 +231,19 @@ export type MerchantStockReplacePayload = Readonly<{
   drawId: string;
   campaignId: string;
   items: readonly MerchantStockEntry[];
+  requestedAt: string;
+}>;
+
+/** Uma mudança no estoque, espelhando `MerchantStockPatchOperationSchema` de @ordem/contracts. */
+export type MerchantStockPatchOperation =
+  | Readonly<{ op: "set"; itemId: string; from: number | null; quantity: number }>
+  | Readonly<{ op: "remove"; itemId: string }>
+  | Readonly<{ op: "add"; entry: MerchantStockEntry }>;
+
+export type MerchantStockPatchPayload = Readonly<{
+  patchId: string;
+  campaignId: string;
+  operations: readonly MerchantStockPatchOperation[];
   requestedAt: string;
 }>;
 
@@ -349,6 +366,7 @@ export type BridgeCommand = CommandEnvelope &
       }>
     | Readonly<{ type: "merchant.purchase.request"; payload: MerchantPurchasePayload }>
     | Readonly<{ type: "merchant.stock.replace"; payload: MerchantStockReplacePayload }>
+    | Readonly<{ type: "merchant.stock.patch"; payload: MerchantStockPatchPayload }>
     | Readonly<{ type: "creature.upsert"; payload: CreatureUpsertPayload }>
     | Readonly<{ type: "character.notes.update"; payload: CharacterNotesUpdatePayload }>
     | Readonly<{ type: "character.items.grant"; payload: CharacterItemsGrantPayload }>

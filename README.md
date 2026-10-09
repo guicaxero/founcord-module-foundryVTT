@@ -107,6 +107,22 @@ sorteios anteriores são substituídos (eles levam uma marca do módulo); o que 
 mestre colocou à mão continua no ator. Reenviar o mesmo sorteio não duplica
 itens. Sem o mestre conectado, o envio espera na fila do Bridge.
 
+Em **Estoque atual**, o portal edita o Lojista item a item com o comando
+`merchant.stock.patch` (0.13.0+): muda a quantidade de qualquer item, inclusive
+os colocados à mão, remove itens e acrescenta itens do catálogo. O resto do
+estoque fica como está. Se a quantidade de um item mudou no Foundry depois da
+leitura (uma compra, por exemplo), aquele item não é alterado e o portal avisa.
+
+### Itens repetidos no Lojista
+
+Com **Lojista: somar itens repetidos** ligado (padrão, nas configurações do
+módulo), arrastar ao Lojista um item que ele já tem, com o mesmo nome e tipo,
+soma à quantidade em vez de criar uma cópia. Isso vale também para armas, cuja
+ficha não mostra a quantidade. Um item do portal que recebe unidades à mão
+passa a ser "colocado à mão" e deixa de ser trocado no sorteio. Cópias que já
+existiam são juntadas na próxima sincronização do Lojista, mantendo a mais
+antiga com a soma; itens do portal e itens à mão não se misturam.
+
 ### Criaturas montadas no portal
 
 Na área **Criaturas** do painel, o mestre monta uma criatura a partir do

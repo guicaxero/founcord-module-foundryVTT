@@ -3,6 +3,7 @@ import { chatMessageProjection, isPublicChatMessage } from "../src/capture/chat"
 import { merchantPurchaseMessage } from "../src/commands/handlers";
 import { failureDelay, nextIdleDelay } from "../src/commands/poller";
 import { characterProjection } from "../src/sync/characters";
+import { MODULE_ID } from "../src/constants";
 import { merchantItemProjection, merchantPrice } from "../src/sync/merchant-item";
 import { clearThumbnailCache, itemImage } from "../src/sync/thumbnail";
 import { collection, setWorld } from "./foundry-mocks";
@@ -34,6 +35,7 @@ describe("characterProjection", () => {
       items: collection([item({ id: "path1", name: "Guerreiro", type: "path", system: { type: "novice" } })]),
       createEmbeddedDocuments: async () => [],
       deleteEmbeddedDocuments: async () => [],
+      updateEmbeddedDocuments: async () => [],
       update: async () => undefined,
     };
 
@@ -98,7 +100,20 @@ describe("merchantItemProjection", () => {
       properties: "Precisa",
       weapon: { damage: "1d6", hands: "one", requirement: { attribute: "agility", minimum: 11 } },
       armor: null,
+      origin: "manual",
+      catalogItemId: null,
     });
+  });
+
+  it("indica os itens criados pelo portal e o item do catálogo de origem", () => {
+    const projection = merchantItemProjection(
+      item({
+        id: "corda",
+        flags: { [MODULE_ID]: { generatedBy: "merchant-stock", drawId: "d", catalogItemId: "cat-1" } },
+      }),
+      options,
+    );
+    expect([projection.origin, projection.catalogItemId]).toEqual(["portal", "cat-1"]);
   });
 
   it("projeta armadura e consumível e ignora códigos desconhecidos", () => {

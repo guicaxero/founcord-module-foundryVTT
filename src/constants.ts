@@ -20,6 +20,7 @@ export const PRESENTATION_ONLY_SETTINGS: ReadonlySet<string> = new Set([
   "lastSyncAt",
   "lastSyncCount",
   "merchantActorId",
+  "merchantStackDuplicates",
   "lastMerchantSyncAt",
   "lastMerchantSyncCount",
   "lastConnectionError",
